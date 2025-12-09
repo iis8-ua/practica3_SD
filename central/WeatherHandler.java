@@ -42,7 +42,9 @@ public class WeatherHandler implements HttpHandler {
 
             boolean esAlertaFrio = body.contains("\"alerta\": true") || body.contains("\"alerta\":true");
             String ciudad = extraerCiudad(body);
+            double temperatura = extraerDouble(body, "temperatura");
             
+            actualizarTemperaturaBD(ciudad, temperatura);
             gestionarAccionClimatica(ciudad, esAlertaFrio);
 
             String response = "Alerta procesada correctamente";
@@ -71,10 +73,10 @@ public class WeatherHandler implements HttpHandler {
                 
                 if (esFrio) {
                     System.out.println("ALERTA FRÍO: Enviando PARADA a " + cpId);
-                    comando = "Parada_Emergencia"; // O "Parar", según tu lógica
+                    comando = "Parada_Emergencia";
                 } else {
                     System.out.println("CLIMA OK: Restableciendo " + cpId);
-                    comando = "Reanudar"; // O el comando para volver a activar
+                    comando = "Reanudar";
                 }
                 
                 enviarComandoKafka(cpId, comando);
@@ -110,5 +112,32 @@ public class WeatherHandler implements HttpHandler {
             return "Desconocida";
         }
         return "Desconocida";
+    }
+    
+    private void actualizarTemperaturaBD(String ciudad, double temp) {
+        String sql = "UPDATE charging_point SET temperatura = ? WHERE ubicacion LIKE ?";
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, temp);
+            ps.setString(2, "%" + ciudad + "%");
+            ps.executeUpdate();
+        } 
+        catch (SQLException e) {
+            System.err.println("Error guardando temperatura: " + e.getMessage());
+        }
+    }
+    
+    private double extraerDouble(String json, String key) {
+        try {
+            int idx = json.indexOf("\"" + key + "\":");
+            if (idx == -1) return 0.0;
+            int start = idx + key.length() + 3;
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            return Double.parseDouble(json.substring(start, end).trim());
+        } 
+        catch (Exception e) { 
+        	return 0.0; 
+        }
     }
 }

@@ -19,6 +19,7 @@ CREATE TABLE charging_point (
     ultima_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     token_seguridad VARCHAR(255),
     clave_cifrado VARCHAR(255),
+    temperatura DECIMAL(5,2) DEFAULT NULL
     FOREIGN KEY (conductor_actual) REFERENCES driver(id)
 );
 

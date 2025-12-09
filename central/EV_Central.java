@@ -34,6 +34,8 @@ public class EV_Central {
             
             server.createContext("/api/alertas", new WeatherHandler(productor));
             
+            server.createContext("/api/estado", new StatusHandler());
+            
             server.setExecutor(null);
             server.start();
             System.out.println("API REST de Central iniciada en puerto 5000");

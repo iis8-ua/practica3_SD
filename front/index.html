@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>EVCharging Central Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #f0f0f0; margin: 0; padding: 20px; }
+        h1, h2 { color: #4db8ff; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        
+        /* Tarjetas de CPs */
+        .cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .card { background-color: #2d2d2d; border-radius: 8px; padding: 15px; border-left: 5px solid gray; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { margin-top: 0; display: flex; justify-content: space-between; }
+        .card p { margin: 5px 0; font-size: 0.9em; color: #ccc; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; }
+        
+        /* Colores de estado */
+        .status-ACTIVADO { border-left-color: #28a745; } .status-ACTIVADO .status-badge { background-color: #28a745; }
+        .status-SUMINISTRANDO { border-left-color: #17a2b8; } .status-SUMINISTRANDO .status-badge { background-color: #17a2b8; }
+        .status-PARADO { border-left-color: #ffc107; } .status-PARADO .status-badge { background-color: #ffc107; color: black; }
+        .status-AVERIADO { border-left-color: #dc3545; } .status-AVERIADO .status-badge { background-color: #dc3545; }
+        .status-DESCONECTADO { border-left-color: #6c757d; } .status-DESCONECTADO .status-badge { background-color: #6c757d; }
+
+        /* Paneles laterales */
+        .panel { background-color: #252526; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #3e3e42; }
+        .log-entry { font-family: monospace; font-size: 0.85em; border-bottom: 1px solid #333; padding: 5px 0; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-time { color: #888; margin-right: 10px; }
+        .log-error { color: #ff6b6b; }
+        .log-info { color: #4db8ff; }
+        
+        /* Tabla Drivers */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #444; }
+        th { color: #888; }
+    </style>
+</head>
+<body>
+    <h1>⚡ EVCharging Central Monitor</h1>
+    
+    <div class="dashboard">
+        <div>
+            <h2>Puntos de Carga (CPs)</h2>
+            <div id="cp-container" class="cp-grid">
+                <div class="card">Cargando datos...</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>Drivers Registrados</h2>
+                <table id="drivers-table">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Saldo</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="panel">
+                <h2>Log de Eventos (Últimos 10)</h2>
+                <div id="logs-container">Esperando eventos...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN: Asegúrate de que este puerto coincide con tu Central (5000 o 9000)
+        const API_URL = 'http://localhost:5000/api/estado'; 
+
+        async function actualizarDashboard() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Error conectando con Central");
+                const data = await response.json();
+
+                renderCPs(data.cps);
+                renderDrivers(data.drivers);
+                renderLogs(data.logs);
+            } catch (error) {
+                console.error(error);
+                // No borramos la pantalla, solo logueamos, para evitar parpadeos si falla una petición puntual
+            }
+        }
+
+		function renderCPs(cps) {
+            const container = document.getElementById('cp-container');
+            container.innerHTML = '';
+            
+            cps.forEach(cp => {
+                const estadoClass = `status-${cp.estado}`;
+                const regIcon = cp.registrado ? '✅' : '❌';
+                
+                const climaTexto = cp.clima === -999 ? "☁️ --" : `🌡️ ${cp.clima} ºC`;
+
+                const html = `
+                    <div class="card ${estadoClass}">
+                        <h3>${cp.id} <span class="status-badge">${cp.estado}</span></h3>
+                        <p>📍 ${cp.ubicacion}</p>
+                        <p>💶 ${cp.precio} €/kWh</p>
+                        <p style="font-weight:bold; color: #ffeb3b;">${climaTexto}</p>
+                        
+                        <p style="font-size:0.8em; border-top:1px solid #444; padding-top:5px; margin-top:10px;">
+                           ${regIcon} <strong>Registro:</strong> ${cp.registrado ? 'SÍ' : 'NO'} <br>
+                           🔑 <strong>Token:</strong> <span style="font-family:monospace; color:#4db8ff;">${cp.token}</span>
+                        </p>
+                        <p>🚗 ${cp.conductor === 'Libre' ? '<span style="color:#888">Libre</span>' : '<strong>'+cp.conductor+'</strong>'}</p>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function renderDrivers(drivers) {
+            const tbody = document.querySelector('#drivers-table tbody');
+            tbody.innerHTML = '';
+            drivers.forEach(d => {
+                tbody.innerHTML += `<tr><td>${d.id}</td><td>${d.nombre}</td><td>${d.saldo.toFixed(2)}€</td></tr>`;
+            });
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logs-container');
+            container.innerHTML = '';
+            logs.forEach(log => {
+                const colorClass = log.evento.includes('AVERIA') || log.evento.includes('Error') ? 'log-error' : 'log-info';
+                // Formatear fecha simple
+                const hora = new Date(log.fecha).toLocaleTimeString();
+                container.innerHTML += `
+                    <div class="log-entry ${colorClass}">
+                        <span class="log-time">[${hora}]</span>
+                        <strong>${log.origen}:</strong> ${log.mensaje}
+                    </div>
+                `;
+            });
+        }
+
+        setInterval(actualizarDashboard, 3000);
+        actualizarDashboard();
+    </script>
+</body>
+</html>

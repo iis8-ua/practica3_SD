@@ -68,6 +68,10 @@ java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP003 "Plaza Mayor 789" 0.16 loc
 java -cp ".:p3/libs/*:p2" p3.evcharging.cp.EV_CP_M localhost 8080 CP001 localhost:9092 8080
 java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP002 localhost:9092 8081
 
+#Iniciar EV_W
+java -cp "../p3/libs/*:.." p3.ev_w.EV_W
+
+
 
 Montar docker:
 cd p2/
