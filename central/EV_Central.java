@@ -99,6 +99,8 @@ public class EV_Central {
             Thread hilo=new Thread(() -> iniciarComandos());
             hilo.start();
             
+            iniciarServidorAPI();
+            
             mantenerEjecucion();
         }
         catch(Exception e) {
