@@ -10,6 +10,7 @@ import java.util.Scanner;
 import p3.db.DBManager;
 import java.sql.*;
 
+
 import javax.swing.SwingUtilities;
 
 //El StringSerializer y StringDeserializer lo que hacen es la conversion de string a bytes y viceversa

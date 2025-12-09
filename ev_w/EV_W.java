@@ -2,40 +2,97 @@ package p3.ev_w;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
-// Necesitarás una librería para parsear JSON (org.json o Gson) o hacerlo a mano con String methods si no puedes usar libs externas.
 
 public class EV_W {
-	private static final String API_KEY = "a2331b49f4c9d2656d837c291d852c12";
-    private static final String CITY = "Alicante,ES"; // O la ciudad que quieras monitorear
-    private static final String CENTRAL_URL = "http://localhost:8080/api/weather-alert"; // URL futura de tu Central
+    private static final String API_KEY = "a2331b49f4c9d2656d837c291d852c12"; 
+    
+    private static volatile String ciudadActual = "Alicante,ES"; 
     
     // Umbral de temperatura (0ºC = 273.15K)
     private static final double UMBRAL_FREEZE_KELVIN = 273.15; 
+    
+    private static final String CENTRAL_API_URL = "http://localhost:8080/api/alertas";
 
     public static void main(String[] args) {
-        System.out.println("Iniciando Weather Control Office (EV_W)...");
+        System.out.println("--- INICIANDO WEATHER CONTROL OFFICE (EV_W) ---");
         
         Timer timer = new Timer();
-        // Ejecutar cada 4 segundos (4000 ms) como pide el enunciado
-        timer.schedule(new TimerTask() {
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 checkWeather();
             }
         }, 0, 4000);
+
+        Scanner scanner = new Scanner(System.in);
+        boolean salir = false;
+
+        while (!salir) {
+            System.out.println("\n--- MENÚ DE CONTROL CLIMÁTICO ---");
+            System.out.println("Ciudad actual monitorizada: " + ciudadActual);
+            System.out.println("1. Cambiar ciudad");
+            System.out.println("2. Salir");
+            System.out.print("Seleccione opción: ");
+
+            try {
+                String input = scanner.nextLine();
+                switch (input) {
+                    case "1":
+                        System.out.print("Introduce el nombre de la nueva ciudad (ej: Madrid,ES o Oslo): ");
+                        String nuevaCiudad = scanner.nextLine().trim();
+                        if (!nuevaCiudad.isEmpty()) {
+                            ciudadActual = nuevaCiudad;
+                            System.out.println(">>> CIUDAD CAMBIADA A: " + ciudadActual);
+                            System.out.println("(El próximo chequeo automático usará la nueva localización)");
+                        }
+                        break;
+                    case "2":
+                        System.out.println("Cerrando Weather Control...");
+                        salir = true;
+                        timer.cancel();
+                        break;
+                    default:
+                        break;
+                }
+            } catch (Exception e) {
+                System.out.println("Error en entrada: " + e.getMessage());
+            }
+            
+            try { 
+            	Thread.sleep(500); 
+            } 
+            catch (InterruptedException e) {
+            	
+            }
+        }
+        
+        scanner.close();
+        System.exit(0);
     }
 
     private static void checkWeather() {
+        String ciudadObjetivo = ciudadActual; 
+        
         try {
-            // 1. Consultar OpenWeather
-            String urlString = "https://api.openweathermap.org/data/2.5/weather?q=" + CITY + "&appid=" + API_KEY;
+            String ciudadEncoded = ciudadObjetivo.replace(" ", "%20");
+            
+            String urlString = "https://api.openweathermap.org/data/2.5/weather?q=" + ciudadEncoded + "&appid=" + API_KEY;
             URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
+            conn.setConnectTimeout(2000);
+
+            int status = conn.getResponseCode();
+            if (status != 200) {
+                System.err.println("[EV_W] Error consultando clima para '" + ciudadObjetivo + "' (Código: " + status + "). Verifique el nombre.");
+                return;
+            }
 
             BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             StringBuilder result = new StringBuilder();
@@ -45,49 +102,74 @@ public class EV_W {
             }
             rd.close();
 
-            // 2. Parsear temperatura (Ejemplo básico buscando la cadena, idealmente usar GSON/Jackson)
             String json = result.toString();
-            double temp = extractTempFromJSON(json);
+            double tempKelvin = extractTempFromJSON(json);
+            double tempCelsius = tempKelvin - 273.15;
             
-            System.out.println("Temperatura actual en " + CITY + ": " + (temp - 273.15) + "ºC");
+            System.out.printf("[AUTO] %s -> %.2fºC. ", ciudadObjetivo, tempCelsius);
 
-            // 3. Notificar a Central si hace frío
-            if (temp < UMBRAL_FREEZE_KELVIN) {
-                notifyCentral(true);
+            boolean alertaFrio = tempKelvin < UMBRAL_FREEZE_KELVIN;
+            
+            if (alertaFrio) {
+                System.out.print("¡ALERTA BAJA TEMPERATURA! -> Notificando a Central.\n");
             } else {
-                notifyCentral(false); // Notificar que todo está OK (para restaurar servicio)
+                System.out.print("Temperatura Operativa -> Enviando OK.\n");
             }
 
+            notifyCentral(ciudadObjetivo, tempCelsius, alertaFrio);
+
         } catch (Exception e) {
-            System.err.println("Error consultando el clima: " + e.getMessage());
+            System.err.println("[EV_W] Error en ciclo de clima: " + e.getMessage());
         }
     }
 
-    private static void notifyCentral(boolean alertaFrio) {
-        // Aquí implementarás la llamada POST a la API de la Central (Paso 3)
-        // Por ahora, solo imprime el log.
-        if (alertaFrio) {
-            System.out.println("ALERTA: Temperatura bajo cero. Enviando petición de PARADA a Central...");
-        } else {
-            System.out.println("CLIMA OK. Enviando estado NORMAL a Central...");
+    private static void notifyCentral(String ciudad, double tempCelsius, boolean alerta) {
+        try {
+            URL url = new URL(CENTRAL_API_URL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            String jsonInputString = String.format(java.util.Locale.US, 
+                "{\"ciudad\": \"%s\", \"temperatura\": %.2f, \"alerta\": %b}", 
+                ciudad, tempCelsius, alerta
+            );
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            
+            conn.getResponseCode(); 
+            conn.disconnect();
+
+        } catch (Exception e) {
+            System.err.println(" -> No se pudo contactar con Central (¿Está encendida?): " + e.getMessage());
         }
     }
 
-    // Método 'sucio' para sacar la temp sin librerías externas complejas
     private static double extractTempFromJSON(String json) {
         try {
-            // Busca "temp":282.55,
             String search = "\"temp\":";
             int index = json.indexOf(search);
             if (index != -1) {
                 int start = index + search.length();
-                int end = json.indexOf(",", start);
+                int endComma = json.indexOf(",", start);
+                int endBracket = json.indexOf("}", start);
+                
+                int end = endComma;
+                if (end == -1 || (endBracket != -1 && endBracket < endComma)) {
+                    end = endBracket;
+                }
+                
                 String tempStr = json.substring(start, end);
                 return Double.parseDouble(tempStr);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } 
+        catch (Exception e) {
+        	
         }
-        return 300.0; // Valor seguro por defecto
+        return 300.0;
     }
 }
