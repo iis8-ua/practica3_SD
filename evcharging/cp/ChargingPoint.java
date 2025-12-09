@@ -20,6 +20,8 @@ public class ChargingPoint {
     //Esta variable está a true o false dependiendo si funciona o no el CP
     private boolean funciona;
     private boolean registradoCentral;
+    private String tokenSesion;
+    private String claveCifrado;
     
     private CentralConnector conector;
     private ChargingSessionService servicio;
