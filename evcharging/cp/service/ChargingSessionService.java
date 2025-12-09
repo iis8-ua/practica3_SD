@@ -1,7 +1,7 @@
-package p2.evcharging.cp.service;
+package p3.evcharging.cp.service;
 
-import p2.evcharging.cp.ChargingPoint;
-import p2.evcharging.cp.CPState;
+import p3.evcharging.cp.ChargingPoint;
+import p3.evcharging.cp.CPState;
 
 
 public class ChargingSessionService {

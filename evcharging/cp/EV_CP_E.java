@@ -1,6 +1,6 @@
-package p2.evcharging.cp;
+package p3.evcharging.cp;
 
-import p2.evcharging.cp.network.MonitorServer;
+import p3.evcharging.cp.network.MonitorServer;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -20,7 +20,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
-import p2.db.DBManager;
+import p3.db.DBManager;
 
 public class EV_CP_E {
 	private ChargingPoint cp;

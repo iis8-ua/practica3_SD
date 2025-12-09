@@ -1,9 +1,9 @@
-package p2.evcharging.cp;
+package p3.evcharging.cp;
 
-import p2.db.DBManager;
+import p3.db.DBManager;
 import java.sql.*;
-import p2.evcharging.cp.network.CentralConnector;
-import p2.evcharging.cp.service.ChargingSessionService;
+import p3.evcharging.cp.network.CentralConnector;
+import p3.evcharging.cp.service.ChargingSessionService;
 
 public class ChargingPoint {
 	private String id;

@@ -1,7 +1,7 @@
-package p2.evcharging.cp.network;
+package p3.evcharging.cp.network;
 
-import p2.evcharging.cp.ChargingPoint;
-import p2.evcharging.cp.EV_CP_E;
+import p3.evcharging.cp.ChargingPoint;
+import p3.evcharging.cp.EV_CP_E;
 
 import java.io.*;
 import java.net.ServerSocket;

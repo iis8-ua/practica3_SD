@@ -1,4 +1,4 @@
-package p2.central;
+package p3.central;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -7,7 +7,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Properties;
 import java.util.Scanner;
-import p2.db.DBManager;
+import p3.db.DBManager;
 import java.sql.*;
 
 import javax.swing.SwingUtilities;

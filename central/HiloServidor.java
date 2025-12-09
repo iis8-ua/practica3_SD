@@ -1,9 +1,9 @@
-package p2.central;
+package p3.central;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import java.sql.*;
-import p2.db.DBManager;
+import p3.db.DBManager;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import java.time.Duration;

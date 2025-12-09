@@ -1,6 +1,6 @@
-package p2.evcharging.cp;
+package p3.evcharging.cp;
 
-import p2.evcharging.cp.network.CentralConnector;
+import p3.evcharging.cp.network.CentralConnector;
 import java.io.*;
 import java.net.Socket;
 import java.util.Properties;

@@ -1,4 +1,4 @@
-package p2.central;
+package p3.central;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.Date;
 import java.util.List;
 import javax.swing.Timer;
-import p2.db.DBManager;
+import p3.db.DBManager;
 
 @SuppressWarnings("serial")
 public class CentralDashboard extends JFrame {

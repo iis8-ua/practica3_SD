@@ -17,6 +17,8 @@ CREATE TABLE charging_point (
     consumo_actual DECIMAL(10,3) DEFAULT 0.0,
     importe_actual DECIMAL(10,3) DEFAULT 0.0,
     ultima_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    token_seguridad VARCHAR(255),
+    clave_cifrado VARCHAR(255),
     FOREIGN KEY (conductor_actual) REFERENCES driver(id)
 );
 
@@ -40,5 +42,7 @@ CREATE TABLE IF NOT EXISTS event_log (
     tipo_evento VARCHAR(255) NOT NULL,
     descripcion TEXT,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_origen VARCHAR(50),
+    usuario_origen VARCHAR(50),
     FOREIGN KEY (cp_id) REFERENCES charging_point(id)
 );

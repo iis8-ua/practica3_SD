@@ -1,4 +1,4 @@
-package p2.evcharging.cp;
+package p3.evcharging.cp;
 
 public enum CPState {
 	ACTIVADO("Activado", "VERDE"),
