@@ -17,11 +17,9 @@ public class EV_W {
     // Umbral de temperatura (0ºC = 273.15K)
     private static final double UMBRAL_FREEZE_KELVIN = 273.15; 
     
-    private static final String CENTRAL_API_URL = "http://localhost:8080/api/alertas";
+    private static final String CENTRAL_API_URL = "http://localhost:5000/api/alertas";
 
     public static void main(String[] args) {
-        System.out.println("--- INICIANDO WEATHER CONTROL OFFICE (EV_W) ---");
-        
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -130,6 +128,9 @@ public class EV_W {
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
+            
+            conn.setConnectTimeout(2000);
+            conn.setReadTimeout(2000); 
 
             String jsonInputString = String.format(java.util.Locale.US, 
                 "{\"ciudad\": \"%s\", \"temperatura\": %.2f, \"alerta\": %b}", 
@@ -139,13 +140,18 @@ public class EV_W {
             try (OutputStream os = conn.getOutputStream()) {
                 byte[] input = jsonInputString.getBytes("utf-8");
                 os.write(input, 0, input.length);
+                os.flush(); 
             }
             
-            conn.getResponseCode(); 
+            int responseCode = conn.getResponseCode();
             conn.disconnect();
 
-        } catch (Exception e) {
-            System.err.println(" -> No se pudo contactar con Central (¿Está encendida?): " + e.getMessage());
+        } 
+        catch (java.net.SocketTimeoutException e) {
+            System.err.println(" -> [TIMEOUT] Central tarda demasiado en responder. Siguiendo...");
+        } 
+        catch (Exception e) {
+            System.err.println(" -> No se pudo contactar con Central: " + e.getMessage());
         }
     }
 

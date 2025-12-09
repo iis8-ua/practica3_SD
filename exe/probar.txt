@@ -87,6 +87,6 @@ docker exec -it p2_mariadb_1 mysql -u evuser -p ev_charging_system
 docker exec -it p2-mariadb-1 mysql -u evuser -p ev_charging_system
 
 hacer los INSERTS
-docker exec -i p2_mariadb_1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p2/central/sql/inserts.sql
+docker exec -i p2_mariadb_1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p3/central/sql/inserts.sql
 ó
-docker exec -i p2-mariadb-1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p2/central/sql/inserts.sql
+docker exec -i p2-mariadb-1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p3/central/sql/inserts.sql

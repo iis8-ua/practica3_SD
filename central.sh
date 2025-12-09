@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp "../p2/libs/*:.." p2.central.EV_Central localhost:9092
+java -cp "../p3/libs/*:.." p3.central.EV_Central localhost:9092

@@ -19,18 +19,15 @@ public class WeatherHandler implements HttpHandler {
     
     private KafkaProducer<String, String> productor;
 
-    // Pasamos el productor en el constructor para poder enviar comandos a los CPs
     public WeatherHandler(KafkaProducer<String, String> productor) {
         this.productor = productor;
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // Configurar cabeceras CORS
         exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
         
         if ("POST".equals(exchange.getRequestMethod())) {
-            // 1. Leer JSON
         	InputStream is = exchange.getRequestBody();
         	StringBuilder sb = new StringBuilder();
         	try (java.io.BufferedReader reader = new java.io.BufferedReader(
@@ -43,32 +40,29 @@ public class WeatherHandler implements HttpHandler {
         	String body = sb.toString();
         	System.out.println("[API REST] Alerta recibida de EV_W: " + body);
 
-            // 2. Parseo manual básico del JSON
             boolean esAlertaFrio = body.contains("\"alerta\": true") || body.contains("\"alerta\":true");
             String ciudad = extraerCiudad(body);
-
-            // 3. Lógica de negocio (Consultar BD y Parar CPs)
+            
             gestionarAccionClimatica(ciudad, esAlertaFrio);
 
-            // 4. Responder OK
             String response = "Alerta procesada correctamente";
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
-        } else {
-            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+        } 
+        else {
+            exchange.sendResponseHeaders(405, -1);
         }
     }
     
     private void gestionarAccionClimatica(String ciudad, boolean esFrio) {
-        // Buscamos en la BD qué CPs están en esa ciudad (o contienen el nombre de la ciudad)
         String sql = "SELECT id FROM charging_point WHERE ubicacion LIKE ?";
         
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setString(1, "%" + ciudad + "%"); // Buscamos coincidencias parciales
+            ps.setString(1, "%" + ciudad + "%");
             ResultSet rs = ps.executeQuery();
             
             while(rs.next()) {
@@ -103,10 +97,8 @@ public class WeatherHandler implements HttpHandler {
         }
     }
 
-    // Helper simple para sacar el nombre de la ciudad del JSON
     private String extraerCiudad(String json) {
         try {
-            // Busca "ciudad":"Valor"
             String key = "\"ciudad\":";
             int idx = json.indexOf(key);
             if (idx != -1) {

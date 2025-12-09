@@ -30,13 +30,13 @@ public class EV_Central {
     
     private static void iniciarServidorAPI() {
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress(5000), 0);
             
             server.createContext("/api/alertas", new WeatherHandler(productor));
             
             server.setExecutor(null);
             server.start();
-            System.out.println("API REST de Central iniciada en puerto 8080");
+            System.out.println("API REST de Central iniciada en puerto 5000");
         } 
         catch (Exception e) {
             System.err.println("Error iniciando API REST: " + e.getMessage());
