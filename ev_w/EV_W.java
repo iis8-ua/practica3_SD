@@ -9,7 +9,7 @@ import java.util.TimerTask;
 // Necesitarás una librería para parsear JSON (org.json o Gson) o hacerlo a mano con String methods si no puedes usar libs externas.
 
 public class EV_W {
-    private static final String API_KEY = "TU_API_KEY_AQUI"; // Regístrate en OpenWeatherMap
+	private static final String API_KEY = "a2331b49f4c9d2656d837c291d852c12";
     private static final String CITY = "Alicante,ES"; // O la ciudad que quieras monitorear
     private static final String CENTRAL_URL = "http://localhost:8080/api/weather-alert"; // URL futura de tu Central
     
