@@ -1,0 +1,92 @@
+# Consumir mensajes de uno de tus topics
+$KAFKA_HOME/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic cp-estado --from-beginning
+
+# En otro terminal, ejecuta tu CP y verás los mensajes
+
+#Creacion de topics
+cd ~/Kafka
+bin/kafka-topics.sh --create --topic cp-registro --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic cp-estado --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic cp-autorizacion --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic actualizacion-recarga --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic fallo-cp --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic recuperacion-cp --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic central-to-cp --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic sistema-eventos --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic monitor-registro --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic ticket --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic comandos-cp --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic monitor-averias --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic monitor-estado --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+# Topics para DRIVER001
+bin/kafka-topics.sh --create --topic driver-autorizacion-DRIVER001 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-estado-DRIVER001 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-ticket-DRIVER001 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-error-DRIVER001 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+# Topics para DRIVER002
+bin/kafka-topics.sh --create --topic driver-autorizacion-DRIVER002 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-estado-DRIVER002 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-ticket-DRIVER002 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-error-DRIVER002 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+# Topics para DRIVER003
+bin/kafka-topics.sh--create --topic driver-autorizacion-DRIVER003 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-estado-DRIVER003 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh--create --topic driver-ticket-DRIVER003 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+bin/kafka-topics.sh --create --topic driver-error-DRIVER003 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+
+#Ver los topics
+bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
+
+#COMPILACION MANUAL
+cd ~/eclipse-workspace/SD-base/src
+javac -cp "p2/libs/*" p2/db/DBManager.java p2/evcharging/cp/*.java p2/evcharging/cp/network/*.java p2/evcharging/cp/service/*.java
+javac -cp "p2/libs/*" p2/db/DBManager.java p2/central/*.java
+
+#Iniciar KAFKA
+cd ~/Kafka
+bin/kafka-server-start.sh config/server.properties
+
+#Iniciar Central
+java -cp ".:p2/libs/*:p2" p2.central.EV_Central localhost:9092
+
+#Inicar Engine
+# CP001
+java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP001 "Calle Principal 123" 0.15 localhost:9090 localhost:9092 8080
+
+# CP002 (en otra terminal)
+java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP002 "Avenida Central 456" 0.18 localhost:9091 localhost:9092 8081
+
+# CP003 (en otra terminal)  
+java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP003 "Plaza Mayor 789" 0.16 localhost:9092 localhost:9092 8082
+
+#Iniciar Monitor
+java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP001 localhost:9092 8080
+java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP002 localhost:9092 8081
+
+
+Montar docker:
+cd p2/
+docker compose build
+docker compose up -d
+docker compose ps
+
+Borrar volumen:
+cd p2/
+docker-compose down
+docker volume rm p2_mariadb_data
+docker volume ls
+
+Entrar BD
+docker exec -it p2_mariadb_1 mysql -u evuser -p ev_charging_system
+ó
+docker exec -it p2-mariadb-1 mysql -u evuser -p ev_charging_system
+
+hacer los INSERTS
+docker exec -i p2_mariadb_1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p2/central/sql/inserts.sql
+ó
+docker exec -i p2-mariadb-1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p2/central/sql/inserts.sql
