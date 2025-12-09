@@ -22,7 +22,7 @@ public class DBManager {
 
     // === CONFIGURACIÓN DE CONEXIÓN ===
     private static final String DB_HOST = "localhost";
-    private static final int DB_PORT = 3306;
+    private static final int DB_PORT = 3307;
     private static final String DB_NAME = "ev_charging_system";
     private static final String DB_USER = "evuser";
     private static final String DB_PASS = "evpass";

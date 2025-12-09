@@ -262,7 +262,7 @@ public class ChargingPoint {
   }
   
   public void actualizarEstadoBD() {
-      try (Connection conn = p2.db.DBManager.getConnection();
+      try (Connection conn = p3.db.DBManager.getConnection();
            PreparedStatement ps = conn.prepareStatement(
                "UPDATE charging_point SET estado = ?, funciona = ?, registrado_central = ?, conductor_actual = ?, consumo_actual = ?, importe_actual = ?, ultima_actualizacion = CURRENT_TIMESTAMP WHERE id = ?")) {
               

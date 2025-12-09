@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import p2.db.DBManager;
+import p3.db.DBManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +45,7 @@ public class WeatherHandler implements HttpHandler {
 
             // 2. Parseo manual básico del JSON
             boolean esAlertaFrio = body.contains("\"alerta\": true") || body.contains("\"alerta\":true");
-            String ciudad = extraerCiudad(body); // Método auxiliar simple
+            String ciudad = extraerCiudad(body);
 
             // 3. Lógica de negocio (Consultar BD y Parar CPs)
             gestionarAccionClimatica(ciudad, esAlertaFrio);
@@ -76,14 +76,13 @@ public class WeatherHandler implements HttpHandler {
                 String comando;
                 
                 if (esFrio) {
-                    System.out.println("❄️ ALERTA FRÍO: Enviando PARADA a " + cpId);
+                    System.out.println("ALERTA FRÍO: Enviando PARADA a " + cpId);
                     comando = "Parada_Emergencia"; // O "Parar", según tu lógica
                 } else {
-                    System.out.println("☀️ CLIMA OK: Restableciendo " + cpId);
+                    System.out.println("CLIMA OK: Restableciendo " + cpId);
                     comando = "Reanudar"; // O el comando para volver a activar
                 }
                 
-                // Enviar comando vía Kafka
                 enviarComandoKafka(cpId, comando);
             }
             
@@ -97,9 +96,9 @@ public class WeatherHandler implements HttpHandler {
             if (productor != null) {
                 ProducerRecord<String, String> record = new ProducerRecord<>("comandos-cp", cpId, comando);
                 productor.send(record);
-                // No hacemos flush aquí para no bloquear excesivamente si hay muchos, pero se podría
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             System.err.println("Error enviando comando a Kafka: " + e.getMessage());
         }
     }

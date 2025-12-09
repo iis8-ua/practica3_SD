@@ -56,16 +56,16 @@ java -cp ".:p2/libs/*:p2" p2.central.EV_Central localhost:9092
 
 #Inicar Engine
 # CP001
-java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP001 "Calle Principal 123" 0.15 localhost:9090 localhost:9092 8080
+java -cp ".:p3/libs/*" p3.evcharging.cp.EV_CP_E CP001 "Calle Fria 123, Oslo" 0.15 localhost:9090 localhost:9092 8080
 
 # CP002 (en otra terminal)
-java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP002 "Avenida Central 456" 0.18 localhost:9091 localhost:9092 8081
+java -cp ".:p3/libs/*" p2.evcharging.cp.EV_CP_E CP002 "Avenida Central 456" 0.18 localhost:9091 localhost:9092 8081
 
 # CP003 (en otra terminal)  
 java -cp ".:p2/libs/*" p2.evcharging.cp.EV_CP_E CP003 "Plaza Mayor 789" 0.16 localhost:9092 localhost:9092 8082
 
 #Iniciar Monitor
-java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP001 localhost:9092 8080
+java -cp ".:p3/libs/*:p2" p3.evcharging.cp.EV_CP_M localhost 8080 CP001 localhost:9092 8080
 java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP002 localhost:9092 8081
 
 

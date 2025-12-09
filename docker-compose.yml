@@ -10,7 +10,7 @@ services:
       - MYSQL_USER=evuser
       - MYSQL_PASSWORD=evpass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./central/sql/init.sql:/docker-entrypoint-initdb.d/init.sql

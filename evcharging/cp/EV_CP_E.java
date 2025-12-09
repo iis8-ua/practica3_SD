@@ -243,7 +243,7 @@ public class EV_CP_E {
 	    try {
 	    	//mismo caso que en resetearCPenBD, me ha tocado hacer la conexion manual a la BD y luego gestionar
 	    	//la desconexion en el finally
-	        String url = "jdbc:mysql://localhost:3306/ev_charging_system?useSSL=false&serverTimezone=Europe/Madrid";
+	        String url = "jdbc:mysql://localhost:3307/ev_charging_system?useSSL=false&serverTimezone=Europe/Madrid";
 	        conn = DriverManager.getConnection(url, "evuser", "evpass");
 	        
 	        ps = conn.prepareStatement(
@@ -614,7 +614,7 @@ public class EV_CP_E {
 	        try {
 	            //se tiene que crear la conexion independiente ya que sino no va con el DBManager, antes usaba la misma 
 	        	//conexion para todos y hacia que saltaran excepciones SQL
-	            String url = "jdbc:mysql://localhost:3306/ev_charging_system?useSSL=false&serverTimezone=Europe/Madrid";
+	            String url = "jdbc:mysql://localhost:3307/ev_charging_system?useSSL=false&serverTimezone=Europe/Madrid";
 	            conn = DriverManager.getConnection(url, "evuser", "evpass");
 	            
 	            ps = conn.prepareStatement(
