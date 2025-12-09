@@ -9,7 +9,13 @@ import java.util.Properties;
 import java.util.Scanner;
 import p3.db.DBManager;
 import java.sql.*;
-
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+import java.net.InetSocketAddress;
+import java.io.OutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import javax.swing.SwingUtilities;
 
@@ -21,6 +27,21 @@ public class EV_Central {
 	private static KafkaProducer<String, String> productor;
     private static Scanner scanner;
     private static boolean ejecucion = true;
+    
+    private static void iniciarServidorAPI() {
+        try {
+            HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+            
+            server.createContext("/api/alertas", new WeatherHandler(productor));
+            
+            server.setExecutor(null);
+            server.start();
+            System.out.println("API REST de Central iniciada en puerto 8080");
+        } 
+        catch (Exception e) {
+            System.err.println("Error iniciando API REST: " + e.getMessage());
+        }
+    }
     
     public static void main(String[] args) {
     	//para que no aparezcan los mensajes de kafka en la central 
