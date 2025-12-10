@@ -19,8 +19,8 @@ public class ChargingPoint {
     private String conductorActual;
     //Esta variable está a true o false dependiendo si funciona o no el CP
     private boolean funciona;
-    private boolean registradoCentral;
-    private String tokenSesion;
+    private boolean registradoCentral=false;
+    private String tokenSesion="-";
     private String claveCifrado;
     
     private CentralConnector conector;
@@ -336,6 +336,14 @@ public class ChargingPoint {
   public void setRegistradoCentral(boolean registrado) {
 	    this.registradoCentral = registrado;
   }
+  
+  public void setClaveCifrado(String clave) {
+      this.claveCifrado = clave;
+  }
+  
+  public void setTokenSesion(String token) {
+      this.tokenSesion = token;
+  }
     
    public String getId() { 
 	   return id; 
@@ -371,6 +379,10 @@ public class ChargingPoint {
    
    public CentralConnector getConector() {
 	   return conector;
+   }
+   
+   public String getTokenSesion() {
+       return this.tokenSesion;
    }
    
    public void imprimirInfoCP() {

@@ -83,6 +83,23 @@ public class MonitorServer {
 	        		 escribirDatos(socket, "Funciona_KO");
 	        	 }
 	         }
+	         
+	         else if (mensaje.startsWith("SET_CREDS|")) {
+	 			 // Formato esperado: SET_CREDS|token123|claveAES
+	 			 String[] partes = mensaje.split("\\|");
+	 			 
+	 			 if (partes.length >= 3) {
+	 				 String token = partes[1];
+	 				 String clave = partes[2];
+	 				 
+	 				 cp.setTokenSesion(token);
+	 				 cp.setClaveCifrado(clave);
+	 				 cp.setRegistradoCentral(true);
+	 				 
+	 				 System.out.println("MonitorServer: Credenciales recibidas y guardadas.");
+	 				 escribirDatos(socket, "CREDS_OK");
+	 			 }
+	 		 }
 		 }
 		 catch(Exception e) {
 			 System.err.println("Error procesando la conexion: " + e.getMessage());

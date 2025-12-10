@@ -2,8 +2,12 @@ package p3.evcharging.cp;
 
 import p3.evcharging.cp.network.CentralConnector;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URL;
 import java.util.Properties;
+import java.util.Scanner;
+
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -46,6 +50,74 @@ public class EV_CP_M {
         monitor.iniciar(hostEngine, puertoEngine, cpId, dirKafka, puertoMonitor);
     }
     
+    private String extraerValorJson(String json, String key) {
+        try {
+            String search = "\"" + key + "\":";
+            int start = json.indexOf(search);
+            if (start == -1) return null;
+            start += search.length();
+            int q1 = json.indexOf("\"", start);
+            int q2 = json.indexOf("\"", q1 + 1);
+            return json.substring(q1 + 1, q2);
+        } 
+        catch (Exception e) { 
+        	return null; 
+        }
+    }
+	
+    private void enviarCredencialesAEngine(String token, String clave) {
+        try {
+            Socket s = new Socket(hostEngine, puertoEngine + 1000);
+            // Protocolo inventado: "SET_CREDS|token|clave"
+            escribirDatos(s, "SET_CREDS|" + token + "|" + clave);
+            String resp = leerDatos(s);
+            s.close();
+            System.out.println("Engine responde: " + resp);
+        } 
+        catch (Exception e) {
+            System.err.println("No se pudo pasar el token al Engine: " + e.getMessage());
+        }
+    }
+    
+    private void registrarCPEnRegistry() {
+        String urlRegistry = "http://localhost:4444/api/registro";
+        System.out.println("Solicitando registro a: " + urlRegistry);
+        
+        try {
+            java.net.URL url = new java.net.URL(urlRegistry);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            
+            String jsonInput = "{\"id\": \"" + this.cpId + "\"}";
+            
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                os.write(jsonInput.getBytes("utf-8"));
+            }
+            
+            if (conn.getResponseCode() == 200) {
+                java.io.InputStream is = conn.getInputStream();
+                java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+                String respuesta = s.hasNext() ? s.next() : "";
+                
+                String token = extraerValorJson(respuesta, "token");
+                String clave = extraerValorJson(respuesta, "clave");
+                
+                if (token != null) {
+                    System.out.println("REGISTRO OK. Token: " + token);
+                    
+                    // IMPORTANTE: Enviar el token al Engine para que lo guarde
+                    enviarCredencialesAEngine(token, clave);
+                    conectarCentral();
+                }
+            } else {
+                System.err.println("Error en registro: " + conn.getResponseCode());
+            }
+        } catch (Exception e) {
+            System.err.println("Error conectando al Registry: " + e.getMessage());
+        }
+    }
+    
     public void escribirDatos(Socket sock, String datos) {
 		try {
 			OutputStream aux= sock.getOutputStream();
@@ -82,10 +154,10 @@ public class EV_CP_M {
             this.dirKafka = dirKafka;
             this.ejecucion = true;
             
-            if (!conectarCentral()) {
+            /*if (!conectarCentral()) {
             	System.err.println("No se ha podido establecer conexion con la central. Saliendo...");
                 return;
-            }
+            }*/
             
             System.out.println("Monitor iniciado para el CP: " + cpId);
             System.out.println("Conectado a Central en: " + dirKafka);
@@ -189,17 +261,38 @@ public class EV_CP_M {
 	}
 
 	private void mantenerEjecucion() {
-		try {
-			while (ejecucion && hilo != null && hilo.isAlive()) {
-                Thread.sleep(1000);
+        Scanner scanner = new Scanner(System.in);
+        
+        while (ejecucion) {
+            System.out.println("\n--- MENÚ MONITOR CP (" + cpId + ") ---");
+            System.out.println("1. Registrar CP en Sistema");
+            System.out.println("2. Salir");
+            System.out.print("Seleccione opción: ");
+            
+            if (scanner.hasNextLine()) {
+                String opcion = scanner.nextLine();
+                
+                switch (opcion) {
+                    case "1":
+                        registrarCPEnRegistry();
+                        break;
+                    case "2":
+                        System.out.println("Deteniendo monitor...");
+                        detener(); 
+                        break;
+                    default:
+                        System.out.println("Opción no válida.");
+                }
             }
-        } 
-		catch (InterruptedException e) {
-            System.out.println("Monitor interrumpido");
+            try { 
+                Thread.sleep(200); 
+            } 
+            catch (Exception e) {
+            	
+            }
         }
-		
-	}
-
+    }
+	
 	private void detener() {
 		ejecucion=false;
 		try {
