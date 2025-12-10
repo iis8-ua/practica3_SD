@@ -28,23 +28,6 @@ public class EV_Central {
     private static Scanner scanner;
     private static boolean ejecucion = true;
     
-    private static void iniciarServidorAPI() {
-        try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(5000), 0);
-            
-            server.createContext("/api/alertas", new WeatherHandler(productor));
-            
-            server.createContext("/api/estado", new StatusHandler());
-            
-            server.setExecutor(null);
-            server.start();
-            System.out.println("API REST de Central iniciada en puerto 5000");
-        } 
-        catch (Exception e) {
-            System.err.println("Error iniciando API REST: " + e.getMessage());
-        }
-    }
-    
     public static void main(String[] args) {
     	//para que no aparezcan los mensajes de kafka en la central 
     	System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "WARN");
@@ -67,6 +50,8 @@ public class EV_Central {
         String dirKafka = args[0];
         System.out.println("Central iniciando...");
         System.out.println("Conectando a Kafka en: " + dirKafka);
+        
+        API_Central apiCentral = null;
         
         try {
         	 //Configuracion productor con Kafka
@@ -101,7 +86,8 @@ public class EV_Central {
             Thread hilo=new Thread(() -> iniciarComandos());
             hilo.start();
             
-            iniciarServidorAPI();
+            apiCentral = new API_Central(productor);
+            apiCentral.iniciar(5000);
             
             mantenerEjecucion();
         }
