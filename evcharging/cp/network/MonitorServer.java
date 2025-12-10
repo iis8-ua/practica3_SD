@@ -9,11 +9,13 @@ import java.net.Socket;
 
 public class MonitorServer {
 	private ChargingPoint cp;
+	private EV_CP_E engine;
     private int puerto;
     private ServerSocket serverSocket;
     private boolean ejecucion;
 	
-	public MonitorServer(ChargingPoint cp, int puerto) {
+	public MonitorServer(EV_CP_E engine, ChargingPoint cp, int puerto) {
+		this.engine=engine;
 		this.cp=cp;
 		this.puerto=puerto;
 		this.ejecucion=false;
@@ -95,6 +97,8 @@ public class MonitorServer {
 	 				 cp.setTokenSesion(token);
 	 				 cp.setClaveCifrado(clave);
 	 				 cp.setRegistradoCentral(true);
+	 				 
+	 				 engine.conectarCentral();
 	 				 
 	 				 System.out.println("MonitorServer: Credenciales recibidas y guardadas.");
 	 				 escribirDatos(socket, "CREDS_OK");

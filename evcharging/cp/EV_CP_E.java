@@ -106,14 +106,14 @@ public class EV_CP_E {
 			  
 			  this.cp=new ChargingPoint(cpId, ubicacion, precioKwh);
 			  
-			  this.monitor= new MonitorServer(cp, puertoMonitor);
+			  this.monitor= new MonitorServer(this, cp, puertoMonitor);
 			  
 			  Thread hiloMonitor = new Thread(() -> monitor.iniciar());
 			  hiloMonitor.start();
 			  
 			  iniciarEsperaMonitor(puertoMonitor);
 			  
-			  iniciarConsumidorCentral();
+			  //iniciarConsumidorCentral();
 
 			  this.funcionamiento=true;
 			  ejecutarBuclePrincipal();
@@ -125,8 +125,11 @@ public class EV_CP_E {
 			  detener();
 		  }
 	  }
-		
 	  
+	  public void conectarCentral() {
+		  registrarEnCentral();
+		  iniciarConsumidorCentral();
+	  }
 	  
 		public void registrarEnCentral() {
 			if(!registrado) {
@@ -191,11 +194,25 @@ public class EV_CP_E {
 							
 		                    break;
 						}
+						
+						if (mensaje.startsWith("SET_CREDS|")) {
+							String[] partes = mensaje.split("\\|");
+							if(partes.length >= 2) {
+								String token = partes[1];
+								cp.setTokenSesion(token); 
+								
+								conectarCentral(); 
+
+								escribirDatos(s, "CREDS_OK");
+							}
+							continue;
+						}
+						
 						if("MONITOR_ACTIVO".equals(mensaje)) {
 							activo=true;
 							if(primera) {
 								System.out.println("Monitor iniciado");
-								registrarEnCentral();
+								//registrarEnCentral();
 								primera=false;
 							}
 							escribirDatos(s,"MONITOR_ACTIVO_ACK");
@@ -277,6 +294,11 @@ public class EV_CP_E {
 	}
 
 	private void iniciarConsumidorCentral() {
+		if (this.consumidor != null) {
+			return; 
+		}
+		
+		
 		hilo=new Thread (() -> {
 			Properties propiedades = new Properties();
 			propiedades.put("bootstrap.servers", dirKafka);
