@@ -385,6 +385,10 @@ public class ChargingPoint {
        return this.tokenSesion;
    }
    
+   public String getClaveCifrado() {
+       return this.claveCifrado;
+   }
+   
    public void imprimirInfoCP() {
 	   System.out.println("\n=== ESTADO COMPLETO CP " + id + " ===");
        System.out.println("Ubicación: " + ubicacion);

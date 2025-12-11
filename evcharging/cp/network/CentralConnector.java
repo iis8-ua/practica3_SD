@@ -1,6 +1,7 @@
 package p3.evcharging.cp.network;
 
 import p3.evcharging.cp.ChargingPoint;
+import p3.common.CryptoUtils;
 import java.io.*;
 import java.net.Socket;
 import java.util.Locale;
@@ -174,8 +175,22 @@ public class CentralConnector {
 			return;
 		}
 		
+		String mensajeFinal=mensaje;
+		String claveCifrado= cp.getClaveCifrado();
+		
+		if(claveCifrado !=null && !claveCifrado.isEmpty()) {
+			String cifrado= CryptoUtils.encriptar(mensaje, claveCifrado);
+			
+			if(cifrado!=null) {
+				mensajeFinal=cifrado;
+			}
+		}
+		else {
+			System.out.println("ALERTA: Enviando mensaje SIN CIFRAR (No hay clave disponible)");
+		}
+		
 		try {
-			ProducerRecord<String, String> record= new ProducerRecord<>(tema, cp.getId(), mensaje);
+			ProducerRecord<String, String> record= new ProducerRecord<>(tema, cp.getId(), mensajeFinal);
 			productor.send(record);
 			//System.out.println("Evento enviado a Kafka --> Tema: " + tema + ", Mensaje: " + mensaje);
 		}
