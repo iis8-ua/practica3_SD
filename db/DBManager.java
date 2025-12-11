@@ -108,16 +108,26 @@ public class DBManager {
     }
     
     private static void registrarEventoAuditoria(String cpId, String tipo, String desc) {
-        String sql = "INSERT INTO event_log (cp_id, tipo_evento, descripcion, fecha) VALUES (?, ?, ?, NOW())";
+        String ip = "127.0.0.1";
+        try {
+            ip = java.net.InetAddress.getLocalHost().getHostAddress();
+        } 
+        catch (Exception e) {
+        	
+        }
+
+        String sql = "INSERT INTO event_log (cp_id, tipo_evento, descripcion, ip_origen, fecha) VALUES (?, ?, ?, ?, NOW())";
+        
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cpId);
             ps.setString(2, tipo);
             ps.setString(3, desc);
+            ps.setString(4, ip);
             ps.executeUpdate();
         } 
         catch (Exception e) {
-        	
+            System.err.println("[DB] Error registrando auditoría: " + e.getMessage());
         }
     }
 
