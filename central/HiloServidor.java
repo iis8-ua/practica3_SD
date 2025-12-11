@@ -120,6 +120,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		if(mensaje.startsWith("Monitor_Desconectado")) {
@@ -138,6 +139,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		
@@ -214,6 +216,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		System.out.println("Monitor registrado para CP: " + cpId);
@@ -227,6 +230,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		
@@ -275,6 +279,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		System.out.println("Averia en CP: " + cpId);
@@ -294,6 +299,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		
@@ -313,6 +319,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		System.out.println("Procesando autorización CP " + cpId + ": " + mensaje);
@@ -333,6 +340,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		
@@ -354,6 +362,7 @@ public class HiloServidor extends Thread {
 		String clave=DBManager.getClaveCifrado(cpId);
 		
 		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
 			return;
 		}
 		String[] partes = mensaje.split("\\|");

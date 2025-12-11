@@ -10,7 +10,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class EV_W {
-    private static final String API_KEY = "a2331b49f4c9d2656d837c291d852c12"; 
+    private static String apiKey = "a2331b49f4c9d2656d837c291d852c12"; 
     
     private static volatile String ciudadActual = "Alicante,ES"; 
     
@@ -20,6 +20,11 @@ public class EV_W {
     private static final String CENTRAL_API_URL = "http://localhost:5000/api/alertas";
 
     public static void main(String[] args) {
+    	
+    	if (args.length > 0) {
+            apiKey = args[0];
+        }
+    	
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -35,7 +40,8 @@ public class EV_W {
             System.out.println("\n--- MENÚ DE CONTROL CLIMÁTICO ---");
             System.out.println("Ciudad actual monitorizada: " + ciudadActual);
             System.out.println("1. Cambiar ciudad");
-            System.out.println("2. Salir");
+            System.out.println("1. Cambiar API KEY");
+            System.out.println("3. Salir");
             System.out.print("Seleccione opción: ");
 
             try {
@@ -50,7 +56,17 @@ public class EV_W {
                             System.out.println("(El próximo chequeo automático usará la nueva localización)");
                         }
                         break;
+                        
                     case "2":
+                    	System.out.print("Introduce la nueva API KEY de OpenWeather: ");
+                        String nuevaKey = scanner.nextLine().trim();
+                        if (!nuevaKey.isEmpty()) {
+                            apiKey = nuevaKey;
+                            System.out.println(">>> API KEY ACTUALIZADA.");
+                        }
+                        break;
+                        
+                    case "3":
                         System.out.println("Cerrando Weather Control...");
                         salir = true;
                         timer.cancel();
@@ -80,7 +96,7 @@ public class EV_W {
         try {
             String ciudadEncoded = ciudadObjetivo.replace(" ", "%20");
             
-            String urlString = "https://api.openweathermap.org/data/2.5/weather?q=" + ciudadEncoded + "&appid=" + API_KEY;
+            String urlString = "https://api.openweathermap.org/data/2.5/weather?q=" + ciudadEncoded + "&appid=" + apiKey;
             URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
