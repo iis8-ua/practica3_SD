@@ -1,10 +1,14 @@
 package p3.evcharging.cp;
 
+import p3.common.CryptoUtils;
 import p3.evcharging.cp.network.CentralConnector;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -115,6 +119,80 @@ public class EV_CP_M {
             }
         } catch (Exception e) {
             System.err.println("Error conectando al Registry: " + e.getMessage());
+        }
+    }
+    
+    private void registrarCPConCertificado() {
+        String urlRegistry = "http://localhost:4444/api/registro"; // URL del Registry
+        
+        try {
+            String miId = this.cpId;
+            String nombreClave = miId + "_java.key";
+            String nombreCert  = miId + ".crt";
+            
+            if (!java.nio.file.Files.exists(java.nio.file.Paths.get(nombreClave))) {
+                String rutaDondeBusco = java.nio.file.Paths.get(nombreClave).toAbsolutePath().toString();
+                String directorioTrabajo = System.getProperty("user.dir");
+                
+                System.err.println("ERROR: No encuentro el fichero " + nombreClave);
+                System.err.println("    Mi directorio de trabajo es: " + directorioTrabajo);
+                System.err.println("   	Estoy intentando leer en:    " + rutaDondeBusco);
+                System.err.println("   -> Asegúrate de que el archivo .key está en esa ruta EXACTA.");
+                return;
+            }
+            
+            if (!java.nio.file.Files.exists(java.nio.file.Paths.get(nombreClave))) {
+                System.err.println("Faltan certificados. Ejecuta ./generar_identidad.sh " + miId);
+                return;
+            }
+
+            java.security.PrivateKey miClavePrivada = CryptoUtils.cargarClavePrivada(nombreClave);
+            String miCertificado = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(nombreCert)));
+            
+            String certLimpio = miCertificado
+                    .replace("-----BEGIN CERTIFICATE-----", "")
+                    .replace("-----END CERTIFICATE-----", "")
+                    .replaceAll("\\s", "");
+
+            String firma = CryptoUtils.firmarRSA(miId, miClavePrivada);
+            
+            String jsonInputString = String.format(
+                "{\"id\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
+                miId, firma, certLimpio
+            );
+            
+            java.net.URL url = new java.net.URL(urlRegistry);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            int status = conn.getResponseCode();
+            if (status == 200) {
+                java.util.Scanner sc = new java.util.Scanner(conn.getInputStream());
+                String responseBody = sc.useDelimiter("\\A").hasNext() ? sc.next() : "";
+                sc.close();
+                
+                String token = extraerValorJson(responseBody, "token");
+                String clave = extraerValorJson(responseBody, "clave");
+                
+                enviarCredencialesAEngine(token, clave);
+                
+            } 
+            else {
+                System.err.println("Error HTTP " + status + ": Registro denegado.");
+            }
+            conn.disconnect();
+
+        } 
+        catch (Exception e) {
+            System.err.println("Error en registro HTTP: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -274,7 +352,8 @@ public class EV_CP_M {
                 
                 switch (opcion) {
                     case "1":
-                        registrarCPEnRegistry();
+                    	registrarCPConCertificado();
+                        //registrarCPEnRegistry();
                         break;
                     case "2":
                         System.out.println("Deteniendo monitor...");
