@@ -119,17 +119,36 @@
             });
         }
 
-        function renderLogs(logs) {
+		function renderLogs(logs) {
             const container = document.getElementById('logs-container');
             container.innerHTML = '';
+            
             logs.forEach(log => {
-                const colorClass = log.evento.includes('AVERIA') || log.evento.includes('Error') ? 'log-error' : 'log-info';
-                // Formatear fecha simple
-                const hora = new Date(log.fecha).toLocaleTimeString();
+                let colorStyle = 'color: #4db8ff;'; 
+                let tipo = log.evento || 'INFO'; 
+
+                if (tipo.includes('AVERIA') || tipo.includes('ERROR') || tipo.includes('SEGURIDAD')) {
+                    colorStyle = 'color: #ff6b6b;';
+                } else if (tipo.includes('BAJA') || tipo.includes('DESCONECTADO')) {
+                    colorStyle = 'color: #ffcc00;';
+                } else if (tipo.includes('REGISTRO')) {
+                    colorStyle = 'color: #00ff00;'; 
+                }
+
+                const fechaObj = new Date(log.fecha);
+                const hora = fechaObj.toLocaleTimeString();
+
                 container.innerHTML += `
-                    <div class="log-entry ${colorClass}">
-                        <span class="log-time">[${hora}]</span>
-                        <strong>${log.origen}:</strong> ${log.mensaje}
+                    <div class="log-entry" style="border-bottom: 1px solid #333; padding: 4px 0;">
+                        <span style="color: #888;">[${hora}]</span>
+                        
+                        <span style="color: cyan; font-size: 0.9em;">[IP: ${log.ip || '?'}]</span>
+                        
+                        <strong style="color: white;">${log.origen}</strong>
+                        
+                        <span style="${colorStyle} font-weight:bold;">[${tipo}]</span>:
+                        
+                        <span style="color: #ccc;">${log.mensaje}</span>
                     </div>
                 `;
             });

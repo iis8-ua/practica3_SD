@@ -65,7 +65,8 @@ public class RegistroHandler implements HttpHandler {
                 enviarRespuesta(exchange, 500, "{\"error\":\"Error BD\"}");
             }
 
-        } else if ("DELETE".equals(metodo)) {
+        } 
+        else if ("DELETE".equals(metodo)) {
             if (darDeBajaEnBD(cpId)) {
                 enviarRespuesta(exchange, 200, "{\"status\":\"BAJA_OK\"}");
                 System.out.println("BAJA OK: " + cpId + " ha sido eliminado del registro.");
@@ -75,11 +76,12 @@ public class RegistroHandler implements HttpHandler {
             }
 
         } 
+        
         else {
             enviarRespuesta(exchange, 405, "Metodo no permitido");
         }
     }
-
+    
     private boolean verificarIdentidad(String cpId, String firma, String certRaw) {
         try {
             X509Certificate cert = CryptoUtils.cargarCertificadoDesdeString(certRaw);

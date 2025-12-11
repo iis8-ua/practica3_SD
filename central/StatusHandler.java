@@ -98,7 +98,7 @@ public class StatusHandler implements HttpHandler {
 
     private String obtenerLogs() {
         StringBuilder sb = new StringBuilder("[");
-        String sql = "SELECT fecha, cp_id, tipo_evento, descripcion FROM event_log ORDER BY fecha DESC LIMIT 10";
+        String sql = "SELECT fecha, cp_id, tipo_evento, descripcion, ip_origen FROM event_log ORDER BY fecha DESC LIMIT 10";
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -107,11 +107,21 @@ public class StatusHandler implements HttpHandler {
                 if (!first) sb.append(",");
                 first = false;
                 String desc = rs.getString("descripcion").replace("\n", " ").replace("\"", "'");
-                sb.append(String.format("{\"fecha\":\"%s\",\"origen\":\"%s\",\"evento\":\"%s\",\"mensaje\":\"%s\"}",
-                        rs.getTimestamp("fecha"), rs.getString("cp_id"), 
-                        rs.getString("tipo_evento"), desc));
+                String ip = rs.getString("ip_origen");
+                if (ip == null) {
+                	ip = "-";
+                }
+                sb.append(String.format("{\"fecha\":\"%s\",\"origen\":\"%s\",\"evento\":\"%s\",\"mensaje\":\"%s\",\"ip\":\"%s\"}",
+                        rs.getTimestamp("fecha"), 
+                        rs.getString("cp_id"), 
+                        rs.getString("tipo_evento"), 
+                        desc,
+                        ip));
             }
-        } catch (SQLException e) { return "[]"; }
+        } 
+        catch (SQLException e) { 
+        	return "[]"; 
+        }
         sb.append("]");
         return sb.toString();
     }
