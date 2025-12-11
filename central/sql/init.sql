@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS event_log (
     tipo_evento VARCHAR(255) NOT NULL,
     descripcion TEXT,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_origen VARCHAR(50),
-    usuario_origen VARCHAR(50),
+    ip_origen VARCHAR(50) DEFAULT '127.0.0.1',
     FOREIGN KEY (cp_id) REFERENCES charging_point(id)
 );

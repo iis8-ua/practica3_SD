@@ -413,14 +413,24 @@ public class HiloServidor extends Thread {
 	}
 	
 	private void registrarEvento(String cpId, String tipo, String descripcion) {
+		String ip= "127.0.0.1";
+		try {
+			ip = java.net.InetAddress.getLocalHost().getHostAddress();
+		}
+		catch(Exception e) {
+			
+		}
+		
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO event_log (cp_id, tipo_evento, descripcion) VALUES (?, ?, ?)")) {
+            		 "INSERT INTO event_log (cp_id, tipo_evento, descripcion, ip_origen, fecha) VALUES (?, ?, ?, ?, NOW())")) {
             ps.setString(1, cpId);
             ps.setString(2, tipo);
             ps.setString(3, descripcion);
+            ps.setString(4, ip);
             ps.executeUpdate();
-        } catch (SQLException e) {
+        } 
+        catch (SQLException e) {
             System.err.println("[DB] Error registrando evento: " + e.getMessage());
         }
     }
