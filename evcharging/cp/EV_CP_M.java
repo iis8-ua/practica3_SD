@@ -83,6 +83,20 @@ public class EV_CP_M {
         }
     }
     
+    private void enviarBajaAEngine() {
+        try {
+            Socket s = new Socket(hostEngine, puertoEngine + 1000);
+            
+            escribirDatos(s, "RESET_TOTAL");
+            String resp = leerDatos(s);
+            s.close();
+            System.out.println("Engine confirma reseteo: " + resp);
+        } 
+        catch (Exception e) {
+            System.err.println("No se pudo enviar orden de reset al Engine: " + e.getMessage());
+        }
+    }
+    
     private void registrarCPEnRegistry() {
         String urlRegistry = "http://localhost:4444/api/registro";
         System.out.println("Solicitando registro a: " + urlRegistry);
@@ -129,17 +143,6 @@ public class EV_CP_M {
             String miId = this.cpId;
             String nombreClave = miId + "_java.key";
             String nombreCert  = miId + ".crt";
-            
-            if (!java.nio.file.Files.exists(java.nio.file.Paths.get(nombreClave))) {
-                String rutaDondeBusco = java.nio.file.Paths.get(nombreClave).toAbsolutePath().toString();
-                String directorioTrabajo = System.getProperty("user.dir");
-                
-                System.err.println("ERROR: No encuentro el fichero " + nombreClave);
-                System.err.println("    Mi directorio de trabajo es: " + directorioTrabajo);
-                System.err.println("   	Estoy intentando leer en:    " + rutaDondeBusco);
-                System.err.println("   -> Asegúrate de que el archivo .key está en esa ruta EXACTA.");
-                return;
-            }
             
             if (!java.nio.file.Files.exists(java.nio.file.Paths.get(nombreClave))) {
                 System.err.println("Faltan certificados. Ejecuta ./generar_identidad.sh " + miId);
@@ -192,6 +195,46 @@ public class EV_CP_M {
         } 
         catch (Exception e) {
             System.err.println("Error en registro HTTP: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    private void darDeBajaCP() {
+        try {
+            String miId = this.cpId;
+            String nombreClave = miId + "_java.key";
+            String nombreCert  = miId + ".crt";
+            
+            java.security.PrivateKey miClavePrivada = CryptoUtils.cargarClavePrivada(nombreClave);
+            String miCertificado = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(nombreCert)));
+            String certLimpio = miCertificado.replace("-----BEGIN CERTIFICATE-----", "").replace("-----END CERTIFICATE-----", "").replaceAll("\\s", "");
+            String firma = CryptoUtils.firmarRSA(miId, miClavePrivada);
+
+            String jsonInputString = String.format(
+                "{\"id\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
+                miId, firma, certLimpio
+            );
+
+            java.net.URL url = new java.net.URL("http://localhost:4444/api/registro");
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("DELETE");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            if (conn.getResponseCode() == 200) {
+                System.out.println("BAJA COMPLETADA. El CP ha sido eliminado del sistema.");
+                enviarBajaAEngine();
+            } 
+            else {
+                System.out.println("Error en la baja.");
+            }
+            
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -344,7 +387,8 @@ public class EV_CP_M {
         while (ejecucion) {
             System.out.println("\n--- MENÚ MONITOR CP (" + cpId + ") ---");
             System.out.println("1. Registrar CP en Sistema");
-            System.out.println("2. Salir");
+            System.out.println("2. Eliminar CP en Sistema");
+            System.out.println("3. Salir");
             System.out.print("Seleccione opción: ");
             
             if (scanner.hasNextLine()) {
@@ -355,7 +399,12 @@ public class EV_CP_M {
                     	registrarCPConCertificado();
                         //registrarCPEnRegistry();
                         break;
+                        
                     case "2":
+                    	darDeBajaCP();
+                    	break;
+                        
+                    case "3":
                         System.out.println("Deteniendo monitor...");
                         detener(); 
                         break;

@@ -19,52 +19,63 @@ public class RegistroHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        
+        String metodo = exchange.getRequestMethod();
+        System.out.println("\n[REGISTRY] Petición recibida: " + metodo);
 
-        if ("POST".equals(exchange.getRequestMethod())) {
-            System.out.println("\n[REGISTRY] Petición de registro recibida.");
+        // 1. LEER BODY
+        InputStream is = exchange.getRequestBody();
+        Scanner s = new Scanner(is, StandardCharsets.UTF_8.name()).useDelimiter("\\A");
+        String body = s.hasNext() ? s.next() : "";
+        s.close();
 
-            // A. Leer body
-            InputStream is = exchange.getRequestBody();
-            @SuppressWarnings("resource")
-            Scanner s = new Scanner(is, StandardCharsets.UTF_8.name()).useDelimiter("\\A");
-            String body = s.hasNext() ? s.next() : "";
+        // 2. EXTRAER DATOS BÁSICOS
+        String cpId = extraerValorJson(body, "id");
+        String firma = extraerValorJson(body, "firma");
+        String certString = extraerValorJson(body, "certificado");
+
+        // 3. VALIDACIÓN DE SEGURIDAD
+        if (cpId == null || firma == null || certString == null) {
+            enviarRespuesta(exchange, 400, "{\"error\":\"Faltan datos de seguridad\"}");
+            return;
+        }
+
+        if (!verificarIdentidad(cpId, firma, certString)) {
+            System.err.println("FIRMA INVÁLIDA para " + cpId);
+            enviarRespuesta(exchange, 403, "{\"error\":\"Firma digital invalida\"}");
+            return;
+        }
+
+        if ("POST".equals(metodo)) {
             
-            // B. Extraer datos del JSON
-            String cpId = extraerValorJson(body, "id");
-            String firma = extraerValorJson(body, "firma");
-            String certString = extraerValorJson(body, "certificado");
-
-            // VALIDACIÓN DE SEGURIDAD (RSA / OPENSSL)
-            if (cpId != null && firma != null && certString != null) {
-                
-                boolean esValido = verificarIdentidad(cpId, firma, certString);
-                
-                if (esValido) {
-                    System.out.println("Identidad VERIFICADA para " + cpId);
-                    
-                    // C. Generar credenciales
-                    String nuevoToken = UUID.randomUUID().toString().substring(0, 8);
-                    String nuevaClave = "AES-" + UUID.randomUUID().toString().substring(0, 8);
-
-                    // D. Guardar en BD
-                    if (registrarEnBD(cpId, nuevoToken, nuevaClave)) {
-                        String jsonRespuesta = String.format(
-                            "{\"status\":\"OK\", \"token\":\"%s\", \"clave\":\"%s\"}", 
-                            nuevoToken, nuevaClave
-                        );
-                        enviarRespuesta(exchange, 200, jsonRespuesta);
-                        System.out.println("   -> Credenciales enviadas.");
-                    } else {
-                        enviarRespuesta(exchange, 500, "{\"error\":\"Error de Base de Datos\"}");
-                    }
-                } else {
-                    System.err.println("FIRMA INVÁLIDA: Intento de registro fraudulento para " + cpId);
-                    enviarRespuesta(exchange, 403, "{\"error\":\"Firma digital invalida\"}");
-                }
-            } else {
-                enviarRespuesta(exchange, 400, "{\"error\":\"Faltan datos (id, firma o certificado)\"}");
+            String ubicacion = extraerValorJson(body, "ubicacion");
+            if(ubicacion == null) {
+            	ubicacion = "Desconocida";
             }
-        } else {
+
+            String nuevoToken = UUID.randomUUID().toString().substring(0, 8);
+            String nuevaClave = "AES-" + UUID.randomUUID().toString().substring(0, 8);
+
+            if (registrarEnBD(cpId, ubicacion, nuevoToken, nuevaClave)) {
+                String json = String.format("{\"status\":\"OK\", \"token\":\"%s\", \"clave\":\"%s\"}", nuevoToken, nuevaClave);
+                enviarRespuesta(exchange, 200, json);
+                System.out.println("ALTA OK: " + cpId + " en " + ubicacion);
+            } 
+            else {
+                enviarRespuesta(exchange, 500, "{\"error\":\"Error BD\"}");
+            }
+
+        } else if ("DELETE".equals(metodo)) {
+            if (darDeBajaEnBD(cpId)) {
+                enviarRespuesta(exchange, 200, "{\"status\":\"BAJA_OK\"}");
+                System.out.println("BAJA OK: " + cpId + " ha sido eliminado del registro.");
+            } 
+            else {
+                enviarRespuesta(exchange, 500, "{\"error\":\"Error BD o CP no existe\"}");
+            }
+
+        } 
+        else {
             enviarRespuesta(exchange, 405, "Metodo no permitido");
         }
     }
@@ -88,17 +99,30 @@ public class RegistroHandler implements HttpHandler {
         }
     }
 
-    private boolean registrarEnBD(String cpId, String token, String clave) {
-        String sql = "UPDATE charging_point SET registrado_central=TRUE, token_sesion=?, clave_cifrado=? WHERE id=?";
+    private boolean registrarEnBD(String cpId, String ubicacion, String token, String clave) {
+    	String sql = "UPDATE charging_point SET registrado_central=TRUE, estado='ACTIVADO', ubicacion=?, token_sesion=?, clave_cifrado=? WHERE id=?";
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, token);
-            ps.setString(2, clave);
-            ps.setString(3, cpId);
+            ps.setString(1, ubicacion);
+            ps.setString(2, token);
+            ps.setString(3, clave);
+            ps.setString(4, cpId);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            System.err.println("[DB Error] " + e.getMessage());
-            return false;
+        } 
+        catch (Exception e) { 
+        	return false; 
+        }
+    }
+    
+    private boolean darDeBajaEnBD(String cpId) {
+        String sql = "UPDATE charging_point SET registrado_central=FALSE, token_sesion=NULL, clave_cifrado=NULL, estado='DESCONECTADO' WHERE id=?";
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cpId);
+            return ps.executeUpdate() > 0;
+        } 
+        catch (Exception e) { 
+        	return false; 
         }
     }
 

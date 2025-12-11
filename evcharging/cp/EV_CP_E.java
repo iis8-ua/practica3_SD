@@ -210,6 +210,15 @@ public class EV_CP_E {
 							}
 							continue;
 						}
+						else if (mensaje.equals("RESET_TOTAL")) {
+					        cp.setTokenSesion(null);
+					        cp.setClaveCifrado(null);
+					        cp.setRegistradoCentral(false);
+					        cp.setEstado(CPState.DESCONECTADO);
+					        this.registrado = false; 
+					        escribirDatos(s, "OK_RESET"); 
+					        continue;
+					    } 
 						
 						if("MONITOR_ACTIVO".equals(mensaje)) {
 							activo=true;
