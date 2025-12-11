@@ -1,8 +1,6 @@
 package p3.db;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * DBManager - Gestor centralizado de conexión a la base de datos.
@@ -65,6 +63,25 @@ public class DBManager {
             connect();
         }
         return connection;
+    }
+    
+    public static String getClaveCifrado(String cpId) {
+    	String sql = "SELECT clave_cifrado FROM charging_point WHERE id = ?";
+    	
+    	try (Connection conn = getConnection();
+           PreparedStatement ps = conn.prepareStatement(sql)) {
+           
+           ps.setString(1, cpId);
+           try (ResultSet rs = ps.executeQuery()) {
+               if (rs.next()) {
+                   return rs.getString("clave_cifrado");
+               }
+           }
+    	}
+    	catch (Exception e) {
+            System.err.println("[DB] Error recuperando clave de cifrado: " + e.getMessage());
+        }
+    	return null;
     }
 
     /**
