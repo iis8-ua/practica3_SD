@@ -83,6 +83,43 @@ public class DBManager {
         }
     	return null;
     }
+    
+    public static boolean revocarCredenciales(String cpId) {
+    	String sql = "UPDATE charging_point SET token_sesion=NULL, clave_cifrado=NULL, registrado_central=FALSE, estado='DESCONECTADO' WHERE id=?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, cpId);
+            int filasAfectadas = ps.executeUpdate();
+            
+            if (filasAfectadas > 0) {
+                System.out.println("[DB] Credenciales eliminadas para " + cpId);
+                
+                registrarEventoAuditoria(cpId, "REVOCACION_CLAVES", "Claves borradas manualmente por administrador de Central");
+                
+                return true;
+            }
+        }
+        catch (SQLException e) {
+            System.err.println("[DB] Error revocando credenciales: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    private static void registrarEventoAuditoria(String cpId, String tipo, String desc) {
+        String sql = "INSERT INTO event_log (cp_id, tipo_evento, descripcion, fecha) VALUES (?, ?, ?, NOW())";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cpId);
+            ps.setString(2, tipo);
+            ps.setString(3, desc);
+            ps.executeUpdate();
+        } 
+        catch (Exception e) {
+        	
+        }
+    }
 
     /**
      * Cierra la conexión de forma segura.

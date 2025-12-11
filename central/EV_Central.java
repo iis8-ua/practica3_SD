@@ -118,7 +118,7 @@ public class EV_Central {
 	}
 
 	private static void iniciarComandos() {
-		System.out.println("Comandos activos: P=Parar, R=Reanudar, E=Emergencia");
+		System.out.println("Comandos activos: P=Parar, R=Reanudar, E=Emergencia, Q=Revocar");
         
         while(ejecucion) {
         	try {
@@ -154,6 +154,25 @@ public class EV_Central {
 			case "E":
 				comando = "Parada_Emergencia";
 				break;
+				
+			case "Q":
+				boolean exito = DBManager.revocarCredenciales(cpId);
+				if(exito) {
+					System.out.println("Credenciales revocadas. El CP ha sido desconectado.");
+					try {
+						String comandoRevocacion = "Revocar_Credenciales";
+						ProducerRecord<String, String> record = new ProducerRecord<>("comandos-cp", cpId, comandoRevocacion);
+						productor.send(record);
+						productor.flush();
+					}
+					catch (Exception e) {
+						System.err.println("Error enviando orden de revocación: " + e.getMessage());
+					}
+				} 
+				else {
+					System.out.println("Error: No se pudo revocar");
+				}
+				return;
 				
 			default:
                 System.out.println("Tecla no válida. Use P, R o E");

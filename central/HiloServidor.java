@@ -55,6 +55,7 @@ public class HiloServidor extends Thread {
 			mensaje = mensajeCifrado;
 		}
 		else {
+			System.out.println("[TEST] Recibido Cifrado: " + mensajeCifrado);
 			String clave= DBManager.getClaveCifrado(cpId);
 			
 			if(clave!=null && !clave.isEmpty()) {
@@ -116,6 +117,11 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarEstadoMonitor(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
 		if(mensaje.startsWith("Monitor_Desconectado")) {
 	        System.out.println("Monitor desconectado para CP: " + cpId);
 	        
@@ -129,6 +135,12 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarAveriaMonitor(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
+		
 		String confirmacion = "Averia_Monitor_ACK|" + cpId;
 	    productor.send(new ProducerRecord<>("central-to-monitor", cpId, confirmacion));
 	    
@@ -199,6 +211,11 @@ public class HiloServidor extends Thread {
 	
 
 	private void procesarRegistroMonitor(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
 		System.out.println("Monitor registrado para CP: " + cpId);
 	    
 	    String confirmacion = "Monitor_Registro_OK|" + cpId;
@@ -207,6 +224,12 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarRecuperacion(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
+		
 		if(mensaje.startsWith("Recuperacion_Reporte")) {
 			System.out.println("Reporte del monitor, recuperacion en CP: " + cpId);
 		}
@@ -249,6 +272,11 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarAveria(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
 		System.out.println("Averia en CP: " + cpId);
 		
 		String confirmacion = "Averia_ACK|" + cpId;
@@ -263,6 +291,12 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarActualizacionRecarga(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
+		
 		String[] partes = mensaje.split("\\|");
         String consumo = partes[3];
         String importe = partes[2];
@@ -276,6 +310,11 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarAutorizacion(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
 		System.out.println("Procesando autorización CP " + cpId + ": " + mensaje);
 		
 		if(mensaje.contains("Aceptada")) {
@@ -291,6 +330,12 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarActualizacionEstado(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
+		
 		String[] partes = mensaje.split("\\|");
         String estado = partes[2];
         String funciona = partes[3];
@@ -306,6 +351,11 @@ public class HiloServidor extends Thread {
 	}
 
 	private void procesarRegistro(String cpId, String mensaje) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
 		String[] partes = mensaje.split("\\|");
         String ubicacion = partes[2];
         String precio = partes[3];

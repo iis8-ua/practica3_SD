@@ -183,6 +183,7 @@ public class CentralConnector {
 			
 			if(cifrado!=null) {
 				mensajeFinal=cifrado;
+				System.out.println("[TEST] Enviando Cifrado: " + mensajeFinal);
 			}
 		}
 		else {

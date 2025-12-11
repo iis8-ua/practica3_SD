@@ -72,7 +72,7 @@ java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP002 localhos
 java -cp "../p3/libs/*:.." p3.ev_w.EV_W
 
 #Iniciar Registry
-
+java -cp ".:p3/libs/*" p3.registry.EV_Registry 
 
 
 

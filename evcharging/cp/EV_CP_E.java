@@ -197,9 +197,12 @@ public class EV_CP_E {
 						
 						if (mensaje.startsWith("SET_CREDS|")) {
 							String[] partes = mensaje.split("\\|");
-							if(partes.length >= 2) {
+							if(partes.length >= 3) {
 								String token = partes[1];
+								String clave = partes[2];
+								
 								cp.setTokenSesion(token); 
+								cp.setClaveCifrado(clave);
 								
 								conectarCentral(); 
 
@@ -348,6 +351,20 @@ public class EV_CP_E {
 		String tipo= partes[0];
 		
 		switch(tipo) {
+			case "Revocar_Credenciales":
+				cp.setTokenSesion(null);
+				cp.setClaveCifrado(null);
+				
+				cp.setRegistradoCentral(false);
+                cp.setEstado(CPState.DESCONECTADO);
+				
+				this.registrado = false; 
+			
+				if (cp.getEstado() == CPState.SUMINISTRANDO) {
+					cp.finalizarSuministro();
+				}
+				break;
+		
 			case "Autorizacion_Solicitud":
 				if(partes.length>4) {
 					String driverId=partes[1];
@@ -547,6 +564,11 @@ public class EV_CP_E {
 	}
 	
 	private void simularAveria() {
+		if (cp.getClaveCifrado() == null || cp.getClaveCifrado().isEmpty()) {
+			System.out.println("-> El CP no tiene credenciales de seguridad .");
+			return;
+		}
+		
 		if(cp.getFunciona()) {
 			System.out.println("Fallo en el CP " + cp.getId());
 			procesandoAveria=true;
@@ -566,6 +588,11 @@ public class EV_CP_E {
 	
 
 	private void repararAveria() {
+		if (cp.getClaveCifrado() == null || cp.getClaveCifrado().isEmpty()) {
+			System.out.println("-> El CP no tiene credenciales de seguridad .");
+			return;
+		}
+		
 		if(cp.getEstado()==CPState.AVERIADO || !cp.getFunciona()) {
 			System.out.println("Reparando averia en CP " + cp.getId());
 			procesandoAveria=true;
