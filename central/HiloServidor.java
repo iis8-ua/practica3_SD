@@ -3,6 +3,8 @@ package p3.central;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import java.sql.*;
+
+import p3.common.CryptoUtils;
 import p3.db.DBManager;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -44,8 +46,30 @@ public class HiloServidor extends Thread {
 		 }
 	 }
 	
-	private void procesarMensaje(String tema, String cpId, String mensaje) {
+	private void procesarMensaje(String tema, String cpId, String mensajeCifrado) {
 		//System.out.println("Se ha recibido - Tema: " + tema + ", CP: " + cpId + ", Mensaje: " + mensaje);
+		
+		String mensaje=null;
+		
+		if (tema.startsWith("driver-") || tema.startsWith("monitor-") || tema.equals("ticket")) {
+			mensaje = mensajeCifrado;
+		}
+		else {
+			String clave= DBManager.getClaveCifrado(cpId);
+			
+			if(clave!=null && !clave.isEmpty()) {
+				mensaje=CryptoUtils.desencriptar(mensajeCifrado, clave);
+			}
+			else {
+				System.err.println("ERROR: Recibido mensaje de " + cpId + " pero no tengo su clave en BD.");
+	            return;
+			}
+			
+			if(mensaje==null) {
+				System.err.println("Fallo al descifrar mensaje de " + cpId);
+	            return;
+			}
+		}
 		
 		try {
 			switch (tema) {
