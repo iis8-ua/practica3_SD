@@ -124,7 +124,6 @@ public class EV_CP_M {
                 if (token != null) {
                     System.out.println("REGISTRO OK. Token: " + token);
                     
-                    // IMPORTANTE: Enviar el token al Engine para que lo guarde
                     enviarCredencialesAEngine(token, clave);
                     conectarCentral();
                 }
@@ -134,6 +133,31 @@ public class EV_CP_M {
         } catch (Exception e) {
             System.err.println("Error conectando al Registry: " + e.getMessage());
         }
+    }
+    
+    private String obtenerUbicacionDeBD(String cpId) {
+        String ubicacion = "Desconocida";
+        
+        String sql = "SELECT ubicacion FROM charging_point WHERE id = ?";
+        
+        try (java.sql.Connection conn = p3.db.DBManager.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, cpId);
+            java.sql.ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                String ubiBD = rs.getString("ubicacion");
+                if (ubiBD != null && !ubiBD.isEmpty()) {
+                    ubicacion = ubiBD;
+                }
+            }
+        } 
+        catch (Exception e) {
+            System.err.println("No se pudo obtener la ubicación de la BD: " + e.getMessage());
+        }
+        
+        return ubicacion;
     }
     
     private void registrarCPConCertificado() {
@@ -159,10 +183,15 @@ public class EV_CP_M {
 
             String firma = CryptoUtils.firmarRSA(miId, miClavePrivada);
             
+            String ubicacion = obtenerUbicacionDeBD(this.cpId);
+            
             String jsonInputString = String.format(
-                "{\"id\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
-                miId, firma, certLimpio
-            );
+                    "{\"id\":\"%s\", \"ubicacion\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
+                    miId, 
+                    ubicacion,
+                    firma, 
+                    certLimpio
+                );
             
             java.net.URL url = new java.net.URL(urlRegistry);
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
