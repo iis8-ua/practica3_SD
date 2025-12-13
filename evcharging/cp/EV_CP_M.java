@@ -228,6 +228,25 @@ public class EV_CP_M {
         }
     }
     
+    private String obtenerClaveDeBD(String idCP) {
+        String clave = null;
+        String sql = "SELECT clave_cifrado FROM charging_point WHERE id = ?";
+        
+        try (java.sql.Connection conn = p3.db.DBManager.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, idCP);
+            java.sql.ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                clave = rs.getString("clave_cifrado");
+            }
+        } catch (Exception e) {
+            System.err.println("Error recuperando clave de BD: " + e.getMessage());
+        }
+        return clave;
+    }
+    
     private void darDeBajaCP() {
         try {
             String miId = this.cpId;
@@ -417,7 +436,8 @@ public class EV_CP_M {
             System.out.println("\n--- MENÚ MONITOR CP (" + cpId + ") ---");
             System.out.println("1. Registrar CP en Sistema");
             System.out.println("2. Eliminar CP en Sistema");
-            System.out.println("3. Salir");
+            System.out.println("3. Consultar estado CP en Sistema");
+            System.out.println("4. Salir");
             System.out.print("Seleccione opción: ");
             
             if (scanner.hasNextLine()) {
@@ -432,8 +452,12 @@ public class EV_CP_M {
                     case "2":
                     	darDeBajaCP();
                     	break;
-                        
+                    	
                     case "3":
+                    	consultarEstadoCP();
+                    	break;
+                        
+                    case "4":
                         System.out.println("Deteniendo monitor...");
                         detener(); 
                         break;
@@ -449,6 +473,70 @@ public class EV_CP_M {
             }
         }
     }
+	
+	private void consultarEstadoCP() {
+		try {
+            String miId = this.cpId;
+            String nombreClave = miId + "_java.key";
+            String nombreCert  = miId + ".crt";
+            
+            if (!Files.exists(Paths.get(nombreClave))) {
+                System.err.println("No se encuentra la clave privada para firmar la petición.");
+                return;
+            }
+            
+            PrivateKey miClavePrivada = CryptoUtils.cargarClavePrivada(nombreClave);
+            String miCertificado = new String(Files.readAllBytes(Paths.get(nombreCert)));
+            
+            String certLimpio = miCertificado
+                    .replace("-----BEGIN CERTIFICATE-----", "")
+                    .replace("-----END CERTIFICATE-----", "")
+                    .replaceAll("\\s", "");
+
+            String firma = CryptoUtils.firmarRSA(miId, miClavePrivada);
+            
+            String jsonInputString = String.format(
+                    "{\"id\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
+                    miId, firma, certLimpio
+            );
+            
+            URL url = new URL("http://localhost:4444/api/registro");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("X-METHOD-OVERRIDE", "GET");
+            conn.setDoOutput(true);
+            
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            
+            int status = conn.getResponseCode();
+            if (status == 200) {
+                Scanner sc = new Scanner(conn.getInputStream());
+                String responseBody = sc.useDelimiter("\\A").hasNext() ? sc.next() : "";
+                sc.close();
+                
+                System.out.println("--- ESTADO ACTUAL DEL CP ---");
+                System.out.println(responseBody); 
+            }
+            
+            else if (status == 404) {
+                System.out.println("El CP no está registrado en la base de datos.");
+            }
+            else {
+                System.err.println("Error consultando estado. Código: " + status);
+            }
+            conn.disconnect();
+            
+		}
+		catch (Exception e) {
+            System.err.println("Error en la consulta GET: " + e.getMessage());
+            e.printStackTrace();
+        }
+	}
 	
 	private void detener() {
 		ejecucion=false;

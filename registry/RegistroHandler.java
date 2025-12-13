@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Scanner;
 import java.util.UUID;
+import java.sql.*;
 
 public class RegistroHandler implements HttpHandler {
 
@@ -21,6 +22,11 @@ public class RegistroHandler implements HttpHandler {
         exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
         
         String metodo = exchange.getRequestMethod();
+        
+        if (exchange.getRequestHeaders().containsKey("X-METHOD-OVERRIDE")) {
+            metodo = exchange.getRequestHeaders().getFirst("X-METHOD-OVERRIDE");
+        }
+        
         System.out.println("\n[REGISTRY] Petición recibida: " + metodo);
 
         // 1. LEER BODY
@@ -75,11 +81,52 @@ public class RegistroHandler implements HttpHandler {
                 enviarRespuesta(exchange, 500, "{\"error\":\"Error BD o CP no existe\"}");
             }
 
-        } 
+        }
+        else if("GET".equals(metodo)) {
+            String jsonInfo = consultarEstadoBD(cpId);
+            
+            if (jsonInfo != null) {
+                enviarRespuesta(exchange, 200, jsonInfo);
+                System.out.println("CONSULTA OK: Estado enviado a " + cpId);
+            } 
+            
+            else {
+                enviarRespuesta(exchange, 404, "{\"error\":\"CP no encontrado en BD\"}");
+            }
+        }
         
         else {
             enviarRespuesta(exchange, 405, "Metodo no permitido");
         }
+    }
+    
+    private String consultarEstadoBD(String cpId) {
+        String sql = "SELECT estado, ubicacion, registrado_central FROM charging_point WHERE id=?";
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, cpId);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String estado = rs.getString("estado");
+                    String ubicacion = rs.getString("ubicacion");
+                    boolean registrado = rs.getBoolean("registrado_central");
+
+                    return String.format(
+                        "{\"status\":\"OK\", \"id\":\"%s\", \"estado\":\"%s\", \"ubicacion\":\"%s\", \"registrado\":%b}",
+                        cpId, 
+                        estado != null ? estado : "DESCONOCIDO", 
+                        ubicacion != null ? ubicacion : "Desconocida", 
+                        registrado
+                    );
+                }
+            }
+        } 
+        catch (Exception e) {
+            System.err.println("Error en consulta BD: " + e.getMessage());
+        }
+        return null;
     }
     
     private boolean verificarIdentidad(String cpId, String firma, String certRaw) {
