@@ -38,6 +38,8 @@ public class EV_CP_M {
     	System.setProperty("org.slf4j.simpleLogger.log.org.slf4j", "WARN");
     	java.util.logging.Logger.getLogger("org.apache.kafka").setLevel(java.util.logging.Level.SEVERE);
     	
+    	confiarEnTodosLosCertificados();
+    	
         if (args.length < 5) {
         	System.out.println("Uso: java EV_CP_M <host_engine> <puerto_engine> <cp_id> <dirKafka> <puerto_monitor>");
             //System.out.println("Ej: java EV_CP_M localhost 8080 CP001 localhost:9092");
@@ -53,6 +55,29 @@ public class EV_CP_M {
         EV_CP_M monitor = new EV_CP_M();
         monitor.iniciar(hostEngine, puertoEngine, cpId, dirKafka, puertoMonitor);
     }
+    
+    private static void confiarEnTodosLosCertificados() {
+        try {
+            javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+                new javax.net.ssl.X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
+                }
+            };
+
+            javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            
+            javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+            
+        } 
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
     
     private String extraerValorJson(String json, String key) {
         try {
@@ -161,7 +186,7 @@ public class EV_CP_M {
     }
     
     private void registrarCPConCertificado() {
-        String urlRegistry = "http://localhost:4444/api/registro"; // URL del Registry
+        String urlRegistry = "https://localhost:4444/api/registro"; // URL del Registry
         
         try {
             String miId = this.cpId;
@@ -254,7 +279,7 @@ public class EV_CP_M {
                 miId, firma, certLimpio
             );
 
-            java.net.URL url = new java.net.URL("http://localhost:4444/api/registro");
+            java.net.URL url = new java.net.URL("https://localhost:4444/api/registro");
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
             conn.setRequestMethod("DELETE");
             conn.setDoOutput(true);
@@ -490,7 +515,7 @@ public class EV_CP_M {
                     miId, firma, certLimpio
             );
             
-            URL url = new URL("http://localhost:4444/api/registro");
+            URL url = new URL("https://localhost:4444/api/registro");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             
             conn.setRequestMethod("GET");
