@@ -362,6 +362,9 @@ public class EV_CP_E {
 		
 		switch(tipo) {
 			case "Revocar_Credenciales":
+				System.out.println("\n!!! ALERTA DE SEGURIDAD !!!");
+	            System.out.println("La Central ha revocado las credenciales de este CP.");
+	            
 				cp.setTokenSesion(null);
 				cp.setClaveCifrado(null);
 				
@@ -369,6 +372,9 @@ public class EV_CP_E {
                 cp.setEstado(CPState.DESCONECTADO);
 				
 				this.registrado = false; 
+				
+				System.out.println("-> Claves eliminadas localmente.");
+	            System.out.println("-> CP desconectado de la red operativa.");
 			
 				if (cp.getEstado() == CPState.SUMINISTRANDO) {
 					cp.finalizarSuministro();
