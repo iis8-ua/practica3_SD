@@ -20,6 +20,8 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
+
+import p3.common.CryptoUtils;
 import p3.db.DBManager;
 
 public class EV_CP_E {
@@ -321,13 +323,30 @@ public class EV_CP_E {
 			
 			try {
 				this.consumidor=new KafkaConsumer<>(propiedades);
-				consumidor.subscribe(Arrays.asList("comandos-cp"));
+				consumidor.subscribe(Arrays.asList("comandos-cp", "central-to-cp"));
 				
 				while(funcionamiento) {
 					ConsumerRecords<String, String> records = consumidor.poll(Duration.ofMillis(100));
 					 for (ConsumerRecord<String, String> record : records) {
 		                    if (cp.getId().equals(record.key())) {
-		                        procesarComandoCentral(record.value());
+		                    	String mensajeRecibido = record.value();
+		                        String mensajeProcesar = mensajeRecibido;
+		                    	
+		                        if (cp.getClaveCifrado() != null && !mensajeRecibido.equals("Revocar_Credenciales")) {
+		                            try {
+		                                String descifrado = CryptoUtils.desencriptar(mensajeRecibido, cp.getClaveCifrado());
+		                                
+		                                if (descifrado != null) {
+		                                    mensajeProcesar = descifrado;
+		                                    System.out.println("[TEST] Mensaje descifrado: " + mensajeProcesar);
+		                                }
+		                            } 
+		                            catch (Exception e) {
+		                                
+		                            }
+		                        }
+		                        
+		                        procesarComandoCentral(mensajeProcesar);
 		                    }
 					 }
 				}
@@ -419,7 +438,7 @@ public class EV_CP_E {
 				break;
 				
 			default:
-	            System.out.println("Comando no reconocido: " + tipo);
+				System.out.println("[INFO] Mensaje de Central recibido: " + tipo);
 
 		}	
 		

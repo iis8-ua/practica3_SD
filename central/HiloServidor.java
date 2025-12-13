@@ -27,6 +27,17 @@ public class HiloServidor extends Thread {
 		this.ejecucion=true;
 		procesarMensajesKafka();
 	}
+	
+	private void enviarMensajeCifrado(String tema, String cpId, String mensaje) {
+	    String clave = DBManager.getClaveCifrado(cpId);
+	    if (clave != null) {
+	        String cifrado = CryptoUtils.encriptar(mensaje, clave);
+	        productor.send(new ProducerRecord<>(tema, cpId, cifrado));
+	    } 
+	    else {
+	        System.err.println("No tengo clave para enviar a " + cpId);
+	    }
+	}
 
 	 private void procesarMensajesKafka() {
 		 while(ejecucion) {
@@ -51,7 +62,7 @@ public class HiloServidor extends Thread {
 		
 		String mensaje=null;
 		
-		if (tema.startsWith("driver-") || tema.startsWith("monitor-") || tema.equals("ticket")) {
+		if (tema.startsWith("driver-") || tema.startsWith("monitor-")) {
 			mensaje = mensajeCifrado;
 		}
 		else {
@@ -161,7 +172,7 @@ public class HiloServidor extends Thread {
 	        registrarEvento(cpId, "MONITOR_DESCONECTADO", "Monitor desconectado - CP marcado como DESCONECTADO");
 	        
 	        String confirmacion = "Monitor_Desconectado_ACK|" + cpId;
-	        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+	        enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
 	    }
 	}
 
@@ -233,7 +244,7 @@ public class HiloServidor extends Thread {
 	    }
 	
 	    String comando = "Inicio_Suministro|" + driverId + "|" + sesionId;
-	    productor.send(new ProducerRecord<>("comandos-cp", cpDisponible, comando));
+	    enviarMensajeCifrado("comandos-cp", cpDisponible, comando);
 	
 	    productor.send(new ProducerRecord<>("driver-autorizacion-" + driverId,
 	            driverId, "Autorizado|" + cpDisponible + "|" + sesionId));
@@ -272,7 +283,7 @@ public class HiloServidor extends Thread {
 		}
 		
 		String confirmacion = "Recuperacion_ACK|" + cpId;
-        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+		enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
         
         String confirmacion2= "Recuperacion|" + cpId;
         productor.send(new ProducerRecord<>("sistema-eventos", cpId, confirmacion2));
@@ -315,7 +326,7 @@ public class HiloServidor extends Thread {
 		System.out.println("Averia en CP: " + cpId);
 		
 		String confirmacion = "Averia_ACK|" + cpId;
-        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+		enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
         
         String confirmacion2= "Averia|" + cpId;
         productor.send(new ProducerRecord<>("sistema-eventos", cpId, confirmacion2));
@@ -340,7 +351,7 @@ public class HiloServidor extends Thread {
         System.out.printf("CP: %s | Consumo: %s kW | Importe: %s €%n", cpId, consumo, importe);
         
         String confirmacion = "Consumo_OK|" + cpId;
-        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+        enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
         registrarEvento(cpId, "CONSUMO_UPDATE",
                 String.format("Actualización de consumo: %s kWh / %s €", consumo, importe));
 	}
@@ -356,12 +367,12 @@ public class HiloServidor extends Thread {
 		
 		if(mensaje.contains("Aceptada")) {
 			String confirmacion = "Autorización_OK_ACK|" + cpId;
-	        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+			enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
 	        registrarEvento(cpId, "AUTORIZACION_OK", mensaje);
 		}
 		else {
 			String confirmacion = "Autorización_DEN_ACK|" + cpId;
-	        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+			enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
 	        registrarEvento(cpId, "AUTORIZACION_DENEGADA", mensaje);
 		}
 	}
@@ -381,7 +392,7 @@ public class HiloServidor extends Thread {
         System.out.println("Estado actualizado CP: " + cpId + ": " + estado + " - Funciona: " + funciona);
         
         String confirmacion = "Actualizacion_OK|" + cpId;
-        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+        enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
         registrarEvento(cpId, "ACTUALIZACION_ESTADO", "Nuevo estado: " + estado);
         
         boolean funcionaBool = "Ok".equalsIgnoreCase(funciona);
@@ -402,7 +413,7 @@ public class HiloServidor extends Thread {
         System.out.println("CP registrado: " + cpId + " en " + ubicacion + " - Precio: " + precio);
         
         String confirmacion = "Registro_OK|" + cpId;
-        productor.send(new ProducerRecord<>("central-to-cp", cpId, confirmacion));
+        enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
         registrarEvento(cpId, "REGISTRO_CP", "CP registrado en " + ubicacion);
         
         try (Connection conn = DBManager.getConnection();
@@ -427,7 +438,7 @@ public class HiloServidor extends Thread {
 	    System.out.printf("[CENTRAL] Ticket recibido de %s → Driver %s (%s kWh / %s €)%n",
 	            cpId, conductorId, consumo, importe);
 
-	    productor.send(new ProducerRecord<>("central-to-cp", cpId, "Ticket_ACK|" + cpId));
+	    enviarMensajeCifrado("central-to-cp", cpId, "Ticket_ACK|" + cpId);
 	
 	    String mensajeDriver = String.format("Ticket|%s|%s|%s", cpId, consumo, importe);
 	    productor.send(new ProducerRecord<>("driver-ticket-" + conductorId, conductorId, mensajeDriver));
