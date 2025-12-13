@@ -68,6 +68,11 @@ public class ChargingPoint {
 	   }
    }
    
+   public void notificarBaja() {
+	    if(conector != null && registradoCentral) {
+	        conector.darDeBajaCentral();
+	    }
+	}
    
    public void activar() {
 	   if(registradoCentral && funciona) {

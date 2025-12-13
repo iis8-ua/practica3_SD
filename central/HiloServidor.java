@@ -77,6 +77,9 @@ public class HiloServidor extends Thread {
 	            case "cp-registro":
 	                procesarRegistro(cpId, mensaje);
 	                break;
+	            case "cp-baja":
+	            	procesarBaja(cpId);
+	            	break;
 	            case "cp-estado":
 	                procesarActualizacionEstado(cpId, mensaje);
 	                break;
@@ -116,6 +119,33 @@ public class HiloServidor extends Thread {
 		}
 	}
 
+	private void procesarBaja(String cpId) {
+		String clave=DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+			return;
+		}
+		
+		registrarEvento(cpId, "BAJA_CP", "Baja solicitada");
+		
+		try (Connection conn = DBManager.getConnection();
+		         PreparedStatement ps = conn.prepareStatement(
+		             "UPDATE charging_point SET registrado_central=FALSE, estado='DESCONECTADO', " +
+		             "clave_cifrado=NULL, token_sesion=NULL WHERE id=?")) {
+		        
+		        ps.setString(1, cpId);
+		        ps.executeUpdate();
+		        System.out.println("Baja completada y credenciales eliminadas para " + cpId);
+		        
+	    } 
+		catch (SQLException e) {
+	        System.err.println("[DB] Error en baja: " + e.getMessage());
+	    }
+		
+	}
+	
+	
 	private void procesarEstadoMonitor(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
 		

@@ -169,6 +169,18 @@ public class CentralConnector {
 	    }
 	}
 	
+	public void darDeBajaCentral() {
+	    try {
+	        String mensaje = "Baja|" + cp.getId();
+	        enviarEventoKafka("cp-baja", mensaje);
+	        System.out.println("Solicitud de baja enviada a Central");
+	    }
+	    catch(Exception e) {
+	        System.err.println("Error enviando baja: " + e.getMessage());
+	    }
+	}
+	
+	
 	private void enviarEventoKafka(String tema, String mensaje) {
 		if(productor == null) {
 			System.out.println("No esta disponible el productor");

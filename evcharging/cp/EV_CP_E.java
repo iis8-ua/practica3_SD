@@ -211,6 +211,7 @@ public class EV_CP_E {
 							continue;
 						}
 						else if (mensaje.equals("RESET_TOTAL")) {
+							cp.notificarBaja();
 					        cp.setTokenSesion(null);
 					        cp.setClaveCifrado(null);
 					        cp.setRegistradoCentral(false);

@@ -17,6 +17,7 @@ public class ServidorConcurrente {
     	
     	consumidor.subscribe(Arrays.asList(
     			"cp-registro",
+    			"cp-baja",
     			"cp-estado",
     			"cp-autorizacion",
     			"actualizacion-recarga",

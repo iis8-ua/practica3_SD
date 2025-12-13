@@ -228,27 +228,18 @@ public class EV_CP_M {
         }
     }
     
-    private String obtenerClaveDeBD(String idCP) {
-        String clave = null;
-        String sql = "SELECT clave_cifrado FROM charging_point WHERE id = ?";
-        
-        try (java.sql.Connection conn = p3.db.DBManager.getConnection();
-             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, idCP);
-            java.sql.ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                clave = rs.getString("clave_cifrado");
-            }
-        } catch (Exception e) {
-            System.err.println("Error recuperando clave de BD: " + e.getMessage());
-        }
-        return clave;
-    }
     
     private void darDeBajaCP() {
         try {
+            enviarBajaAEngine();
+            
+            try { 
+            	Thread.sleep(1000); 
+            } 
+            catch (InterruptedException e) {
+            	
+            }
+        	
             String miId = this.cpId;
             String nombreClave = miId + "_java.key";
             String nombreCert  = miId + ".crt";
@@ -276,7 +267,6 @@ public class EV_CP_M {
 
             if (conn.getResponseCode() == 200) {
                 System.out.println("BAJA COMPLETADA. El CP ha sido eliminado del sistema.");
-                enviarBajaAEngine();
             } 
             else {
                 System.out.println("Error en la baja.");
