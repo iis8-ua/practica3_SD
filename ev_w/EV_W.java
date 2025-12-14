@@ -8,6 +8,8 @@ import java.net.URL;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+import javax.net.ssl.*;
+import java.security.cert.X509Certificate;
 
 public class EV_W {
     private static String apiKey = "a2331b49f4c9d2656d837c291d852c12"; 
@@ -17,9 +19,10 @@ public class EV_W {
     // Umbral de temperatura (0ºC = 273.15K)
     private static final double UMBRAL_FREEZE_KELVIN = 273.15; 
     
-    private static final String CENTRAL_API_URL = "http://localhost:5000/api/alertas";
+    private static final String CENTRAL_API_URL = "https://localhost:5000/api/alertas";
 
     public static void main(String[] args) {
+    	ignorarSSL();
     	
     	if (args.length > 0) {
             apiKey = args[0];
@@ -31,7 +34,7 @@ public class EV_W {
             public void run() {
                 checkWeather();
             }
-        }, 0, 4000);
+        }, 0, 10000);
 
         Scanner scanner = new Scanner(System.in);
         boolean salir = false;
@@ -74,7 +77,8 @@ public class EV_W {
                     default:
                         break;
                 }
-            } catch (Exception e) {
+            } 
+            catch (Exception e) {
                 System.out.println("Error en entrada: " + e.getMessage());
             }
             
@@ -140,7 +144,7 @@ public class EV_W {
     private static void notifyCentral(String ciudad, double tempCelsius, boolean alerta) {
         try {
             URL url = new URL(CENTRAL_API_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -193,5 +197,24 @@ public class EV_W {
         	
         }
         return 300.0;
+    }
+    
+    private static void ignorarSSL() {
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                }
+            };
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+        } 
+        catch (Exception e) {
+            System.err.println("Error configurando SSL bypass");
+        }
     }
 }

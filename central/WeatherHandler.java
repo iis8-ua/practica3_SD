@@ -5,7 +5,7 @@ import com.sun.net.httpserver.HttpHandler;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import p3.db.DBManager;
-
+import p3.common.CryptoUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,13 +41,15 @@ public class WeatherHandler implements HttpHandler {
         	System.out.println("[API REST] Alerta recibida de EV_W: " + body);
 
             boolean esAlertaFrio = body.contains("\"alerta\": true") || body.contains("\"alerta\":true");
-            String ciudad = extraerCiudad(body);
+            String ciudadRaw = extraerCiudad(body);
             double temperatura = extraerDouble(body, "temperatura");
+            
+            String ciudad = ciudadRaw.contains(",") ? ciudadRaw.split(",")[0] : ciudadRaw;
             
             actualizarTemperaturaBD(ciudad, temperatura);
             gestionarAccionClimatica(ciudad, esAlertaFrio);
 
-            String response = "Alerta procesada correctamente";
+            String response = "{\"status\":\"OK\"}";
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -59,7 +61,7 @@ public class WeatherHandler implements HttpHandler {
     }
     
     private void gestionarAccionClimatica(String ciudad, boolean esFrio) {
-        String sql = "SELECT id FROM charging_point WHERE ubicacion LIKE ?";
+        String sql = "SELECT id, clave_cifrado FROM charging_point WHERE ubicacion LIKE ?";
         
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -67,19 +69,36 @@ public class WeatherHandler implements HttpHandler {
             ps.setString(1, "%" + ciudad + "%");
             ResultSet rs = ps.executeQuery();
             
+            int afectados = 0;
             while(rs.next()) {
                 String cpId = rs.getString("id");
+                String clave = rs.getString("clave_cifrado");
                 String comando;
                 
                 if (esFrio) {
                     System.out.println("ALERTA FRÍO: Enviando PARADA a " + cpId);
                     comando = "Parada_Emergencia";
-                } else {
+                } 
+                else {
                     System.out.println("CLIMA OK: Restableciendo " + cpId);
                     comando = "Reanudar";
                 }
                 
-                enviarComandoKafka(cpId, comando);
+                if (clave != null && !clave.isEmpty()) {
+                    String mensajeCifrado = CryptoUtils.encriptar(comando, clave);
+                    System.out.println("[TEST] CP: " + cpId + " | Comando: " + comando + " | Encriptado: " + mensajeCifrado);
+                    if (mensajeCifrado != null) {
+                        enviarComandoKafka(cpId, mensajeCifrado);
+                        afectados++;
+                    }
+                } 
+                else {
+                    System.err.println("No se puede enviar comando a " + cpId + ": falta clave AES");
+                }
+                
+                if (afectados > 0 && esFrio) {
+                    DBManager.registrarAuditoria("EV_W (" + ciudad + ")", "CLIMA", "Parada emergencia por frío en " + afectados + " CPs", "ALERTA");
+                }
             }
             
         } catch (SQLException e) {
