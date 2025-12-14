@@ -430,6 +430,14 @@ public class EV_CP_E {
 					System.out.println("Finalizando suministro...");
 					cp.finalizarSuministro();
 				}
+				
+				//para que le de tiempo a mandar la auditoria
+				try { 
+		            Thread.sleep(1000); 
+		        } 
+				catch (InterruptedException e) {
+		        }
+				
 				cp.parar();
 				break;
 				

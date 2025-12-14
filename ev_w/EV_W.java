@@ -34,7 +34,7 @@ public class EV_W {
             public void run() {
                 checkWeather();
             }
-        }, 0, 10000);
+        }, 0, 4000);
 
         Scanner scanner = new Scanner(System.in);
         boolean salir = false;
