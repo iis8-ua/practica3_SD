@@ -92,9 +92,7 @@ docker volume rm p2_mariadb_data
 docker volume ls
 
 Entrar BD
-docker exec -it p2_mariadb_1 mysql -u evuser -p ev_charging_system
-ó
-docker exec -it p2-mariadb-1 mysql -u evuser -p ev_charging_system
+docker exec -it p3_mariadb_1 mysql -u evuser -pevpass ev_charging_system
 
 hacer los INSERTS
 docker exec -i p2_mariadb_1 mysql -u evuser -pevpass ev_charging_system < /home/israelizqdo/eclipse-workspace/SD-base/src/p3/central/sql/inserts.sql

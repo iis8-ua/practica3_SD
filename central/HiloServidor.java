@@ -78,6 +78,16 @@ public class HiloServidor extends Thread {
 			}
 			
 			if(mensaje==null) {
+				String origen = DBManager.obtenerOrigen(cpId);
+				if (origen==null) {
+					origen="Central";
+				}
+                DBManager.registrarAuditoria(
+                    origen, 
+                    "SEGURIDAD", 
+                    "Error crítico de descifrado: Las claves no coinciden.", 
+                    "ERROR" 
+                );
 				System.err.println("Fallo al descifrar mensaje de " + cpId);
 	            return;
 			}
