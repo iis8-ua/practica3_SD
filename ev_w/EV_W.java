@@ -12,7 +12,7 @@ import javax.net.ssl.*;
 import java.security.cert.X509Certificate;
 
 public class EV_W {
-    private static String apiKey = "a2331b49f4c9d2656d837c291d852c12"; 
+    private static String apiKey;
     
     private static volatile String ciudadActual = "Alicante,ES"; 
     
@@ -27,6 +27,10 @@ public class EV_W {
     	if (args.length > 0) {
             apiKey = args[0];
         }
+    	else {
+        	System.out.println("Uso: java p3.ev_w.EV_W API_KEY");
+    		System.exit(1);
+    	}
     	
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {

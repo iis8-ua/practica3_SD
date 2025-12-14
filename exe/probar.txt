@@ -69,7 +69,7 @@ java -cp ".:p3/libs/*:p2" p3.evcharging.cp.EV_CP_M localhost 8080 CP001 localhos
 java -cp ".:p2/libs/*:p2" p2.evcharging.cp.EV_CP_M localhost 8080 CP002 localhost:9092 8081
 
 #Iniciar EV_W
-java -cp "../p3/libs/*:.." p3.ev_w.EV_W
+java -cp "../p3/libs/*:.." p3.ev_w.EV_W a2331b49f4c9d2656d837c291d852c12
 
 #Iniciar Registry
 java -cp ".:p3/libs/*" p3.registry.EV_Registry 
