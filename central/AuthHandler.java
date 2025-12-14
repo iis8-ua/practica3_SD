@@ -23,9 +23,18 @@ public class AuthHandler implements HttpHandler {
             
             System.out.println("[AUTH] Petición de login para: " + cpId);
 
-            String claveAES = DBManager.getClaveCifrado(cpId);
+            String ipCliente = exchange.getRemoteAddress().getAddress().getHostAddress();
+            String origen = ipCliente + " (" + cpId + ")";
+            String claveAES = DBManager.validarYObtenerClave(cpId, token);
             
             if (claveAES != null) {
+            	DBManager.registrarAuditoria(
+            	        origen, 
+            	        "AUTENTICACION", 
+            	        "Login correcto: Token validado y clave entregada", 
+            	        "EXITO"
+            	);
+            	
                 String response = String.format("{\"clave\":\"%s\"}", claveAES);
                 
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -36,6 +45,13 @@ public class AuthHandler implements HttpHandler {
                 System.out.println("[AUTH] Clave entregada a " + cpId);
             } 
             else {
+            	DBManager.registrarAuditoria(
+            	        origen, 
+            	        "AUTENTICACION", 
+            	        "Fallo de Login: Token inválido o expirado", 
+            	        "FALLO"
+            	);
+            	
                 String error = "{\"error\":\"Credenciales inválidas\"}";
                 exchange.sendResponseHeaders(401, error.length());
                 try (OutputStream os = exchange.getResponseBody()) {

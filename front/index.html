@@ -58,7 +58,7 @@
             </div>
 
             <div class="panel">
-                <h2>Log de Eventos (Últimos 10)</h2>
+                <h2>Auditoría</h2>
                 <div id="logs-container">Esperando eventos...</div>
             </div>
         </div>
@@ -122,34 +122,56 @@
             const container = document.getElementById('logs-container');
             container.innerHTML = '';
             
-            logs.forEach(log => {
-                let colorStyle = 'color: #4db8ff;'; 
-                let tipo = log.evento || 'INFO'; 
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<div style="color:#666; font-style:italic;">Sin eventos recientes</div>';
+                return;
+            }
 
-                if (tipo.includes('AVERIA') || tipo.includes('ERROR') || tipo.includes('SEGURIDAD')) {
-                    colorStyle = 'color: #ff6b6b;';
-                } else if (tipo.includes('BAJA') || tipo.includes('DESCONECTADO')) {
-                    colorStyle = 'color: #ffcc00;';
-                } else if (tipo.includes('REGISTRO')) {
-                    colorStyle = 'color: #00ff00;'; 
+            logs.forEach(log => {
+                // Definir colores e iconos según el RESULTADO
+                let colorBorde = '#666'; // Gris por defecto
+                let bgStyle = '';
+
+                // Lógica de colores basada en tu Auditoría
+                const res = log.resultado ? log.resultado.toUpperCase() : 'INFO';
+                
+                if (res === 'EXITO') {
+                    colorBorde = '#28a745'; // Verde
+                } else if (res === 'FALLO' || res === 'BLOQUEADO' || res === 'ERROR') {
+                    colorBorde = '#dc3545'; // Rojo
+                } else if (res === 'ALERTA') {
+                    colorBorde = '#ffc107'; // Amarillo
                 }
 
+                // Formatear fecha
                 const fechaObj = new Date(log.fecha);
                 const hora = fechaObj.toLocaleTimeString();
 
-                container.innerHTML += `
-                    <div class="log-entry" style="border-bottom: 1px solid #333; padding: 4px 0;">
-                        <span style="color: #888;">[${hora}]</span>
+                // HTML Estructurado para Auditoría
+                const html = `
+                    <div class="log-entry" style="
+                        border-left: 4px solid ${colorBorde}; 
+                        background-color: #2d2d2d; 
+                        margin-bottom: 6px; 
+                        padding: 6px; 
+                        border-radius: 0 4px 4px 0;
+                    ">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span style="color: #888; font-size: 0.8em;">${hora}</span>
+                            <span style="font-size: 0.8em; font-weight:bold; color:${colorBorde};">${res}</span>
+                        </div>
                         
-                        <span style="color: cyan; font-size: 0.9em;">[IP: ${log.ip || '?'}]</span>
+                        <div style="color: #4db8ff; font-weight:bold; font-size: 0.9em;">
+                             ${log.origen}
+                        </div>
                         
-                        <strong style="color: white;">${log.origen}</strong>
-                        
-                        <span style="${colorStyle} font-weight:bold;">[${tipo}]</span>:
-                        
-                        <span style="color: #ccc;">${log.mensaje}</span>
+                        <div style="display:flex; gap: 10px; align-items:center;">
+                             <span style="background:#333; padding:2px 6px; border-radius:4px; font-size:0.75em; border:1px solid #555;">${log.tipo}</span>
+                             <span style="color: #ddd; font-size: 0.9em;">${log.descripcion}</span>
+                        </div>
                     </div>
                 `;
+                container.innerHTML += html;
             });
         }
 

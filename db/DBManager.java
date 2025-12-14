@@ -87,6 +87,14 @@ public class DBManager {
     public static boolean revocarCredenciales(String cpId) {
     	String sql = "UPDATE charging_point SET token_sesion=NULL, clave_cifrado=NULL, registrado_central=FALSE, estado='DESCONECTADO' WHERE id=?";
         
+    	String origenIP = "127.0.0.1";
+        try {
+            origenIP = java.net.InetAddress.getLocalHost().getHostAddress();
+        } 
+        catch (Exception e) {
+        	
+        }
+    	
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -96,7 +104,12 @@ public class DBManager {
             if (filasAfectadas > 0) {
                 System.out.println("[DB] Credenciales eliminadas para " + cpId);
                 
-                registrarEventoAuditoria(cpId, "REVOCACION_CLAVES", "Claves borradas manualmente por administrador de Central");
+                registrarAuditoria(
+                        origenIP,              
+                        "REVOCACION", 
+                        "Claves borradas manualmente para " + cpId, 
+                        "EXITO"
+                );
                 
                 return true;
             }
@@ -107,28 +120,74 @@ public class DBManager {
         return false;
     }
     
-    private static void registrarEventoAuditoria(String cpId, String tipo, String desc) {
-        String ip = "127.0.0.1";
-        try {
-            ip = java.net.InetAddress.getLocalHost().getHostAddress();
+    
+    public static String validarYObtenerClave(String cpId, String token) {
+    	String sql = "SELECT clave_cifrado FROM charging_point WHERE id=? AND token_sesion=? AND registrado_central=TRUE";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, cpId);
+            ps.setString(2, token);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                	System.out.println("[DB] Query ejecutada. Token coincide.");
+                    return rs.getString("clave_cifrado");
+                }
+            }
+        } 
+        catch (SQLException e) {
+            System.err.println("[DB] Error validando credenciales: " + e.getMessage());
+        }
+        
+        System.out.println("[DB] Token no coincidente o CP no registrado para ID: " + cpId);
+        return null; 
+    }
+    
+    public static String obtenerOrigen(String cpId) {
+        String sql = "SELECT origen FROM auditoria WHERE origen LIKE ? ORDER BY id DESC LIMIT 1";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, "%(" + cpId + ")"); 
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("origen");
+                }
+            }
         } 
         catch (Exception e) {
         	
         }
-
-        String sql = "INSERT INTO event_log (cp_id, tipo_evento, descripcion, ip_origen, fecha) VALUES (?, ?, ?, ?, NOW())";
         
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, cpId);
-            ps.setString(2, tipo);
-            ps.setString(3, desc);
-            ps.setString(4, ip);
-            ps.executeUpdate();
-        } 
-        catch (Exception e) {
-            System.err.println("[DB] Error registrando auditoría: " + e.getMessage());
-        }
+        return "IP_DESCONOCIDA (" + cpId + ")"; 
+    }
+
+    public static void registrarAuditoria(String origen, String tipo, String descripcion, String resultado) {
+        new Thread(() -> {
+        	
+        	String url = "jdbc:mysql://localhost:3307/ev_charging_system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Europe/Madrid";
+            String user = "evuser";
+            String pass = "evpass";
+        	
+            String sql = "INSERT INTO auditoria (origen, tipo_evento, descripcion, resultado) VALUES (?, ?, ?, ?)";
+            try (Connection conn =DriverManager.getConnection(url, user, pass);
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                
+                ps.setString(1, origen);
+                ps.setString(2, tipo);
+                ps.setString(3, descripcion);
+                ps.setString(4, resultado);
+                
+                ps.executeUpdate();
+            } 
+            catch (Exception e) {
+                System.err.println("Error guardando auditoría: " + e.getMessage());
+            }
+        }).start();
     }
 
     /**

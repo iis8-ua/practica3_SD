@@ -37,7 +37,7 @@ public class StatusHandler implements HttpHandler {
         json.append("{");
         json.append("\"cps\": ").append(obtenerCPs()).append(",");
         json.append("\"drivers\": ").append(obtenerDrivers()).append(",");
-        json.append("\"logs\": ").append(obtenerLogs());
+        json.append("\"logs\": ").append(getAuditoriaJSON());
         json.append("}");
         return json.toString();
     }
@@ -122,6 +122,39 @@ public class StatusHandler implements HttpHandler {
         catch (SQLException e) { 
         	return "[]"; 
         }
+        sb.append("]");
+        return sb.toString();
+    }
+    
+    private String getAuditoriaJSON() {
+        StringBuilder sb = new StringBuilder("[");
+        String sql = "SELECT fecha, origen, tipo_evento, descripcion, resultado FROM auditoria ORDER BY fecha DESC LIMIT 10";
+        
+        try (java.sql.Connection conn = p3.db.DBManager.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = ps.executeQuery()) {
+             
+            boolean primero = true;
+            while (rs.next()) {
+                if (!primero) {
+                	sb.append(",");
+                }
+                
+                sb.append(String.format(
+                    "{\"fecha\":\"%s\", \"origen\":\"%s\", \"tipo\":\"%s\", \"descripcion\":\"%s\", \"resultado\":\"%s\"}",
+                    rs.getTimestamp("fecha").toString(),
+                    rs.getString("origen"),
+                    rs.getString("tipo_evento"),
+                    rs.getString("descripcion").replace("\"", "'"),
+                    rs.getString("resultado")
+                ));
+                primero = false;
+            }
+        } 
+        catch (Exception e) {
+            System.err.println("Error leyendo auditoria: " + e.getMessage());
+        }
+        
         sb.append("]");
         return sb.toString();
     }

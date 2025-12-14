@@ -37,7 +37,7 @@ CREATE TABLE charging_session (
     FOREIGN KEY (conductor_id) REFERENCES driver(id)
 );
 
-CREATE TABLE IF NOT EXISTS event_log (
+CREATE TABLE event_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cp_id VARCHAR(50),
     tipo_evento VARCHAR(255) NOT NULL,
@@ -45,4 +45,13 @@ CREATE TABLE IF NOT EXISTS event_log (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_origen VARCHAR(50) DEFAULT '127.0.0.1',
     FOREIGN KEY (cp_id) REFERENCES charging_point(id)
+);
+
+CREATE TABLE auditoria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    origen VARCHAR(100) NOT NULL,  
+    tipo_evento VARCHAR(50) NOT NULL, 
+    descripcion TEXT,    
+    resultado VARCHAR(20) 
 );

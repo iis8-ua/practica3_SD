@@ -132,9 +132,10 @@ public class HiloServidor extends Thread {
 
 	private void procesarBaja(String cpId) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		
@@ -149,6 +150,8 @@ public class HiloServidor extends Thread {
 		        ps.executeUpdate();
 		        System.out.println("Baja completada y credenciales eliminadas para " + cpId);
 		        
+		        DBManager.registrarAuditoria(origen, "BAJA", "Baja solicitada", "EXITO");
+		        
 	    } 
 		catch (SQLException e) {
 	        System.err.println("[DB] Error en baja: " + e.getMessage());
@@ -159,9 +162,10 @@ public class HiloServidor extends Thread {
 	
 	private void procesarEstadoMonitor(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		if(mensaje.startsWith("Monitor_Desconectado")) {
@@ -169,7 +173,7 @@ public class HiloServidor extends Thread {
 	        
 	        actualizarEstadoCP(cpId, "DESCONECTADO", true);
 
-	        registrarEvento(cpId, "MONITOR_DESCONECTADO", "Monitor desconectado - CP marcado como DESCONECTADO");
+	        DBManager.registrarAuditoria(origen, "MONITOR", "Monitor desconectado - CP pasa a DESCONECTADO", "ALERTA");
 	        
 	        String confirmacion = "Monitor_Desconectado_ACK|" + cpId;
 	        enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
@@ -178,9 +182,10 @@ public class HiloServidor extends Thread {
 
 	private void procesarAveriaMonitor(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		
@@ -190,7 +195,7 @@ public class HiloServidor extends Thread {
 	    String evento = "Averia_Monitor|" + cpId;
 	    productor.send(new ProducerRecord<>("sistema-eventos", cpId, evento));
 	    
-	    registrarEvento(cpId, "AVERIA_MONITOR", "Avería reportada por Monitor: " + mensaje);
+	    DBManager.registrarAuditoria(origen, "INCIDENCIA", "Avería reportada por Monitor: " + mensaje, "FALLO");
 	    actualizarEstadoCP(cpId, "AVERIADO", false);
 	    
 	}
@@ -255,23 +260,25 @@ public class HiloServidor extends Thread {
 
 	private void procesarRegistroMonitor(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		System.out.println("Monitor registrado para CP: " + cpId);
 	    
 	    String confirmacion = "Monitor_Registro_OK|" + cpId;
 	    productor.send(new ProducerRecord<>("central-to-monitor", cpId, confirmacion));
-	    registrarEvento(cpId, "REGISTRO_MONITOR", "Monitor registrado: " + mensaje);
+	    DBManager.registrarAuditoria(origen, "REGISTRO_MONITOR", "Monitor registrado: " + mensaje, "INFO");
 	}
 
 	private void procesarRecuperacion(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		
@@ -288,7 +295,7 @@ public class HiloServidor extends Thread {
         String confirmacion2= "Recuperacion|" + cpId;
         productor.send(new ProducerRecord<>("sistema-eventos", cpId, confirmacion2));
         
-        registrarEvento(cpId, "RECUPERACION", "CP recuperado: " + mensaje);
+        DBManager.registrarAuditoria(origen, "MANTENIMIENTO", "CP recuperado: " + mensaje, "EXITO");
         
         String estadoActual = obtenerEstadoActualCP(cpId);
         
@@ -318,9 +325,10 @@ public class HiloServidor extends Thread {
 
 	private void procesarAveria(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		System.out.println("Averia en CP: " + cpId);
@@ -331,16 +339,17 @@ public class HiloServidor extends Thread {
         String confirmacion2= "Averia|" + cpId;
         productor.send(new ProducerRecord<>("sistema-eventos", cpId, confirmacion2));
         
-        registrarEvento(cpId, "AVERIA", "Avería detectada: " + mensaje);
+        DBManager.registrarAuditoria(origen, "INCIDENCIA", "Avería detectada: " + mensaje, "FALLO");
         actualizarEstadoCP(cpId, "AVERIADO", false);
 
 	}
 
 	private void procesarActualizacionRecarga(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		
@@ -352,15 +361,16 @@ public class HiloServidor extends Thread {
         
         String confirmacion = "Consumo_OK|" + cpId;
         enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
-        registrarEvento(cpId, "CONSUMO_UPDATE",
-                String.format("Actualización de consumo: %s kWh / %s €", consumo, importe));
+        DBManager.registrarAuditoria(origen, "CONSUMO",
+                String.format("Actualización: %s kWh / %s €", consumo, importe), "INFO");
 	}
 
 	private void procesarAutorizacion(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		System.out.println("Procesando autorización CP " + cpId + ": " + mensaje);
@@ -368,20 +378,21 @@ public class HiloServidor extends Thread {
 		if(mensaje.contains("Aceptada")) {
 			String confirmacion = "Autorización_OK_ACK|" + cpId;
 			enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
-	        registrarEvento(cpId, "AUTORIZACION_OK", mensaje);
+			DBManager.registrarAuditoria(origen, "AUTORIZACION", "Autorización aceptada", "EXITO");
 		}
 		else {
 			String confirmacion = "Autorización_DEN_ACK|" + cpId;
 			enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
-	        registrarEvento(cpId, "AUTORIZACION_DENEGADA", mensaje);
+			DBManager.registrarAuditoria(origen, "AUTORIZACION", "Autorización denegada", "FALLO");
 		}
 	}
 
 	private void procesarActualizacionEstado(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		
@@ -393,17 +404,41 @@ public class HiloServidor extends Thread {
         
         String confirmacion = "Actualizacion_OK|" + cpId;
         enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
-        registrarEvento(cpId, "ACTUALIZACION_ESTADO", "Nuevo estado: " + estado);
         
         boolean funcionaBool = "Ok".equalsIgnoreCase(funciona);
         actualizarEstadoCP(cpId, estado, funcionaBool);
+        
+        
+        if ("PARADO".equals(estado)) {
+            DBManager.registrarAuditoria(
+            	origen, 
+                "OPERATIVA", 
+                "CP detenido manualmente (Fuera de servicio)", 
+                "ALERTA"
+            );
+        }
+        else if ("ACTIVADO".equals(estado) || "LIBRE".equals(estado)) {
+            DBManager.registrarAuditoria(
+            	origen, 
+                "OPERATIVA", 
+                "CP activado y disponible", 
+                "EXITO"
+            );
+        }
+        else if ("SUMINISTRANDO".equals(estado)) {
+            DBManager.registrarAuditoria(origen, "OPERATIVA", "Inicio de carga de vehículo", "INFO");
+        }
+        else {
+        	DBManager.registrarAuditoria(origen, "OPERATIVA", "Cambio de estado a: " + estado, "INFO");
+        }
 	}
 
 	private void procesarRegistro(String cpId, String mensaje) {
 		String clave=DBManager.getClaveCifrado(cpId);
+		String origen = DBManager.obtenerOrigen(cpId);
 		
 		if(clave==null) {
-			registrarEvento(cpId, "ALERTA_SEGURIDAD", "Intento de comunicación con credenciales revocadas");
+	        DBManager.registrarAuditoria(origen, "SEGURIDAD", "Intento de comunicación sin credenciales", "BLOQUEADO");
 			return;
 		}
 		String[] partes = mensaje.split("\\|");
@@ -414,7 +449,7 @@ public class HiloServidor extends Thread {
         
         String confirmacion = "Registro_OK|" + cpId;
         enviarMensajeCifrado("central-to-cp", cpId, confirmacion);
-        registrarEvento(cpId, "REGISTRO_CP", "CP registrado en " + ubicacion);
+        DBManager.registrarAuditoria(origen, "REGISTRO_CP", "CP registrado en " + ubicacion, "EXITO");
         
         try (Connection conn = DBManager.getConnection();
                 PreparedStatement ps = conn.prepareStatement(
@@ -423,13 +458,21 @@ public class HiloServidor extends Thread {
                ps.setDouble(2, Double.parseDouble(precio));
                ps.setString(3, cpId);
                ps.executeUpdate();
-        } catch (SQLException e) {
+        } 
+        catch (SQLException e) {
         	System.err.println("[DB] Error actualizando CP: " + e.getMessage());
         }
 		
 	}
 	
 	private void procesarTicket(String cpId, String mensaje) {
+		String clave = DBManager.getClaveCifrado(cpId);
+		
+		if(clave==null) {
+			return;
+		}
+		
+		String origen = DBManager.obtenerOrigen(cpId);
 	    String[] partes = mensaje.split("\\|");
 	    String conductorId = partes[1];
 	    String consumo = partes[2];
@@ -443,8 +486,8 @@ public class HiloServidor extends Thread {
 	    String mensajeDriver = String.format("Ticket|%s|%s|%s", cpId, consumo, importe);
 	    productor.send(new ProducerRecord<>("driver-ticket-" + conductorId, conductorId, mensajeDriver));
 	
-	    registrarEvento(cpId, "TICKET_ENVIADO",
-	            String.format("Ticket enviado a %s: %s kWh / %s €", conductorId, consumo, importe));
+	    DBManager.registrarAuditoria(origen, "FACTURACION", 
+                String.format("Ticket emitido: %s kWh / %s €", consumo, importe), "EXITO");
 	}
 
 	public void detener() {

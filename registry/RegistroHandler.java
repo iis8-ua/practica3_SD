@@ -45,8 +45,17 @@ public class RegistroHandler implements HttpHandler {
             enviarRespuesta(exchange, 400, "{\"error\":\"Faltan datos de seguridad\"}");
             return;
         }
+        
+        String ipCliente = exchange.getRemoteAddress().getAddress().getHostAddress();
+        String origen = ipCliente + " (" + cpId + ")";
 
         if (!verificarIdentidad(cpId, firma, certString)) {
+        	DBManager.registrarAuditoria(
+        	        origen, 
+        	        "SEGURIDAD", 
+        	        "Intento de registro rechazado: Firma digital RSA inválida", 
+        	        "BLOQUEADO"
+        	);
             System.err.println("FIRMA INVÁLIDA para " + cpId);
             enviarRespuesta(exchange, 403, "{\"error\":\"Firma digital invalida\"}");
             return;
@@ -63,6 +72,12 @@ public class RegistroHandler implements HttpHandler {
             String nuevaClave = "AES-" + UUID.randomUUID().toString().substring(0, 8);
 
             if (registrarEnBD(cpId, ubicacion, nuevoToken, nuevaClave)) {
+            	DBManager.registrarAuditoria(
+            	        origen, 
+            	        "REGISTRO", 
+            	        "Nuevo CP registrado correctamente en el sistema", 
+            	        "EXITO"
+            	);
             	String json = String.format("{\"status\":\"OK\", \"token\":\"%s\"}", nuevoToken);
                 enviarRespuesta(exchange, 200, json);
                 System.out.println("ALTA OK: " + cpId + " en " + ubicacion);
@@ -74,10 +89,22 @@ public class RegistroHandler implements HttpHandler {
         } 
         else if ("DELETE".equals(metodo)) {
             if (darDeBajaEnBD(cpId)) {
+            	DBManager.registrarAuditoria(
+                    origen,            
+                    "BAJA",
+                    "El CP ha solicitado baja voluntaria del servicio",
+                    "EXITO"
+                );
                 enviarRespuesta(exchange, 200, "{\"status\":\"BAJA_OK\"}");
                 System.out.println("BAJA OK: " + cpId + " ha sido eliminado del registro.");
             } 
             else {
+            	DBManager.registrarAuditoria(
+                    origen, 
+                    "BAJA", 
+                    "Error al intentar dar de baja", 
+                    "FALLO"
+                );
                 enviarRespuesta(exchange, 500, "{\"error\":\"Error BD o CP no existe\"}");
             }
 
@@ -86,11 +113,23 @@ public class RegistroHandler implements HttpHandler {
             String jsonInfo = consultarEstadoBD(cpId);
             
             if (jsonInfo != null) {
+            	DBManager.registrarAuditoria(
+                    origen, 
+                    "CONSULTA", 
+                    "El CP ha consultado su estado de registro", 
+                    "EXITO"
+                );
                 enviarRespuesta(exchange, 200, jsonInfo);
                 System.out.println("CONSULTA OK: Estado enviado a " + cpId);
             } 
             
             else {
+            	DBManager.registrarAuditoria(
+                    origen, 
+                    "CONSULTA", 
+                    "Intento de consulta de un CP que no existe en BD", 
+                    "FALLO"
+                );
                 enviarRespuesta(exchange, 404, "{\"error\":\"CP no encontrado en BD\"}");
             }
         }
