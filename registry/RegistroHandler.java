@@ -63,7 +63,7 @@ public class RegistroHandler implements HttpHandler {
             String nuevaClave = "AES-" + UUID.randomUUID().toString().substring(0, 8);
 
             if (registrarEnBD(cpId, ubicacion, nuevoToken, nuevaClave)) {
-                String json = String.format("{\"status\":\"OK\", \"token\":\"%s\", \"clave\":\"%s\"}", nuevoToken, nuevaClave);
+            	String json = String.format("{\"status\":\"OK\", \"token\":\"%s\"}", nuevoToken);
                 enviarRespuesta(exchange, 200, json);
                 System.out.println("ALTA OK: " + cpId + " en " + ubicacion);
             } 

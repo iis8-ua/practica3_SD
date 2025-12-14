@@ -186,7 +186,8 @@ public class EV_CP_M {
     }
     
     private void registrarCPConCertificado() {
-        String urlRegistry = "https://localhost:4444/api/registro"; // URL del Registry
+        String urlRegistry = "https://localhost:4444/api/registro";
+        String token = null;
         
         try {
             String miId = this.cpId;
@@ -212,11 +213,8 @@ public class EV_CP_M {
             
             String jsonInputString = String.format(
                     "{\"id\":\"%s\", \"ubicacion\":\"%s\", \"firma\":\"%s\", \"certificado\":\"%s\"}",
-                    miId, 
-                    ubicacion,
-                    firma, 
-                    certLimpio
-                );
+                    miId, ubicacion, firma, certLimpio
+            );
             
             java.net.URL url = new java.net.URL(urlRegistry);
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -235,10 +233,11 @@ public class EV_CP_M {
                 String responseBody = sc.useDelimiter("\\A").hasNext() ? sc.next() : "";
                 sc.close();
                 
-                String token = extraerValorJson(responseBody, "token");
-                String clave = extraerValorJson(responseBody, "clave");
+                token = extraerValorJson(responseBody, "token");
+                System.out.println("-> Registro OK en Registry. Token obtenido: " + token);
+                //String clave = extraerValorJson(responseBody, "clave");
                 
-                enviarCredencialesAEngine(token, clave);
+                
                 
             } 
             else {
@@ -250,6 +249,52 @@ public class EV_CP_M {
         catch (Exception e) {
             System.err.println("Error en registro HTTP: " + e.getMessage());
             e.printStackTrace();
+        }
+        
+        if(token !=null) {
+        	System.out.println("-> Iniciando autenticación con Central para obtener claves...");
+        	try {
+        		String urlAuth = "https://localhost:5000/api/login";
+            	
+            	URL url = new URL(urlAuth);
+                javax.net.ssl.HttpsURLConnection conAuth = (javax.net.ssl.HttpsURLConnection) url.openConnection();
+                
+                conAuth.setRequestMethod("POST");
+                conAuth.setDoOutput(true);
+                conAuth.setRequestProperty("Content-Type", "application/json");
+                
+                String jsonLogin = String.format("{\"id\":\"%s\", \"token\":\"%s\"}", this.cpId, token);
+
+                try (OutputStream os = conAuth.getOutputStream()) {
+                    os.write(jsonLogin.getBytes("utf-8"));
+                }
+
+                int status = conAuth.getResponseCode();
+                if (status == 200) {
+                    Scanner s = new Scanner(conAuth.getInputStream()).useDelimiter("\\A");
+                    String respuesta = s.hasNext() ? s.next() : "";
+                    s.close();
+
+                    String clave = extraerValorJson(respuesta, "clave");
+                    
+                    if (clave != null) {
+                        System.out.println("-> AUTENTICACIÓN EXITOSA CON CENTRAL. Clave recibida.");
+                        enviarCredencialesAEngine(token, clave);
+                        conectarCentral(); 
+                    } 
+                    else {
+                        System.err.println("Error: La Central no devolvió la clave.");
+                    }
+                } 
+                else {
+                    System.err.println("Error Login Central. Código: " + status);
+                }
+                conAuth.disconnect();
+        	}
+        	catch (Exception e) {
+                System.err.println("Error conectando a API Central: " + e.getMessage());
+            }
+        	
         }
     }
     

@@ -56,6 +56,7 @@ public class API_Central {
             
             server.createContext("/api/alertas", new WeatherHandler(productor));
             server.createContext("/api/estado", new StatusHandler());
+            server.createContext("/api/login", new AuthHandler());
             
             server.setExecutor(null);
             server.start();
@@ -64,6 +65,7 @@ public class API_Central {
             System.out.println("API CENTRAL iniciada en puerto " + puerto);
             System.out.println(" -> Alertas: https://localhost:" + puerto + "/api/alertas");
             System.out.println(" -> Estado:  https://localhost:" + puerto + "/api/estado");
+            System.out.println(" -> Login:  https://localhost:" + puerto + "/api/login");
             System.out.println("--------------------------------------------------");
             
         } 
