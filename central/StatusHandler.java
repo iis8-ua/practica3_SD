@@ -36,7 +36,7 @@ public class StatusHandler implements HttpHandler {
         StringBuilder json = new StringBuilder();
         json.append("{");
         json.append("\"cps\": ").append(obtenerCPs()).append(",");
-        json.append("\"drivers\": ").append(obtenerDrivers()).append(",");
+        json.append("\"peticiones\": ").append(obtenerPeticionesActivas()).append(",");
         json.append("\"logs\": ").append(getAuditoriaJSON());
         json.append("}");
         return json.toString();
@@ -78,20 +78,37 @@ public class StatusHandler implements HttpHandler {
         return sb.toString();
     }
 
-    private String obtenerDrivers() {
+    private String obtenerPeticionesActivas() {
         StringBuilder sb = new StringBuilder("[");
-        String sql = "SELECT id, nombre, saldo FROM driver"; 
+
+        String sql = "SELECT cp_id, conductor_id, inicio FROM charging_session WHERE estado='EN_CURSO' ORDER BY inicio DESC"; 
+        
         try (Connection conn = DBManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
+            
             boolean first = true;
             while (rs.next()) {
-                if (!first) sb.append(",");
+                if (!first) {
+                	sb.append(",");
+                }
                 first = false;
-                sb.append(String.format(Locale.US, "{\"id\":\"%s\",\"nombre\":\"%s\",\"saldo\":%.2f}",
-                        rs.getString("id"), rs.getString("nombre"), rs.getDouble("saldo")));
+                
+                java.sql.Timestamp ts = rs.getTimestamp("inicio");
+                String fechaStr = (ts != null) ? ts.toString() : "Sin datos";
+
+                sb.append(String.format(Locale.US, 
+                    "{\"cp\":\"%s\",\"driver\":\"%s\",\"inicio\":\"%s\"}",
+                    rs.getString("cp_id"), 
+                    rs.getString("conductor_id"),
+                    fechaStr
+                ));
             }
-        } catch (SQLException e) { return "[]"; }
+        } 
+        catch (SQLException e) { 
+            System.err.println("Error obteniendo sesiones: " + e.getMessage());
+            return "[]"; 
+        }
         sb.append("]");
         return sb.toString();
     }

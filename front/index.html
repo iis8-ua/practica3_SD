@@ -49,13 +49,19 @@
         </div>
 
         <div>
-            <div class="panel">
-                <h2>Drivers Registrados</h2>
-                <table id="drivers-table">
-                    <thead><tr><th>ID</th><th>Nombre</th><th>Saldo</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+			<div class="panel">
+			    <h2>Suministros en Curso</h2>
+			    <table id="peticiones-table">
+			        <thead>
+			            <tr>
+			                <th>Fecha/Hora</th>
+			                <th>Driver</th>
+			                <th>CP</th>
+			            </tr>
+			        </thead>
+			        <tbody></tbody>
+			    </table>
+			</div>
 
             <div class="panel">
                 <h2>Auditoría</h2>
@@ -74,7 +80,7 @@
                 const data = await response.json();
 
                 renderCPs(data.cps);
-                renderDrivers(data.drivers);
+                renderPeticiones(data.peticiones);
                 renderLogs(data.logs);
             } catch (error) {
                 console.error(error);
@@ -110,13 +116,38 @@
             });
         }
 
-        function renderDrivers(drivers) {
-            const tbody = document.querySelector('#drivers-table tbody');
-            tbody.innerHTML = '';
-            drivers.forEach(d => {
-                tbody.innerHTML += `<tr><td>${d.id}</td><td>${d.nombre}</td><td>${d.saldo.toFixed(2)}€</td></tr>`;
-            });
-        }
+		function renderPeticiones(peticiones) {
+		    const tbody = document.querySelector('#peticiones-table tbody');
+		    tbody.innerHTML = '';
+		    
+		    if (!peticiones || peticiones.length === 0) {
+		        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No hay cargas activas</td></tr>';
+		        return;
+		    }
+
+		    peticiones.forEach(p => {
+		        let fecha = "--/--";
+		        let hora = "--:--";
+
+		        if (p.inicio && p.inicio !== "Sin datos") {
+		            const dateObj = new Date(p.inicio);
+		            // Formato DD/MM
+		            fecha = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+		            // Formato HH:MM
+		            hora = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+		        }
+
+		        tbody.innerHTML += `
+		            <tr>
+		                <td>
+		                    <div style="font-size:0.85em; color:#bbb">${fecha}</div>
+		                    <div style="font-size:1.1em; font-weight:bold; color:#fff">${hora}</div>
+		                </td>
+		                <td style="color:#17a2b8;">${p.driver}</td>
+		                <td style="font-weight:bold;">${p.cp}</td>
+		            </tr>`;
+		    });
+		}
 
 		function renderLogs(logs) {
             const container = document.getElementById('logs-container');

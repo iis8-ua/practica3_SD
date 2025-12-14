@@ -74,6 +74,9 @@ java -cp "../p3/libs/*:.." p3.ev_w.EV_W
 #Iniciar Registry
 java -cp ".:p3/libs/*" p3.registry.EV_Registry 
 
+#Iniciar Driver
+java -cp ".:p3/libs/*" p3.driver.EV_Driver localhost:9092 DRIVER001
+
 
 
 Montar docker:
