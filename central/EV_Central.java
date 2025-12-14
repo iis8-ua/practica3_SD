@@ -7,6 +7,8 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Properties;
 import java.util.Scanner;
+
+import p3.common.CryptoUtils;
 import p3.db.DBManager;
 import java.sql.*;
 import com.sun.net.httpserver.HttpServer;
@@ -156,18 +158,34 @@ public class EV_Central {
 				break;
 				
 			case "Q":
+				String claveActual = DBManager.getClaveCifrado(cpId);
+				comando = "Revocar_Credenciales";
+			    String mensajeAEnviar = comando;
+			    
+			    if (claveActual != null && !claveActual.isEmpty()) {
+			    	try {
+			            mensajeAEnviar =CryptoUtils.encriptar(comando, claveActual);
+			        } 
+			    	catch (Exception e) {
+			            System.err.println("-> Error al cifrar, se enviará en plano: " + e.getMessage());
+			        }
+			    }
+			    else {
+			        System.out.println("-> No hay clave en BD. Se enviará en texto plano.");
+			    }
+			    
+			    try {
+			        ProducerRecord<String, String> record = new ProducerRecord<>("comandos-cp", cpId, mensajeAEnviar);
+			        productor.send(record);
+			        productor.flush();
+			    } 
+			    catch (Exception e) {
+			        System.err.println("Error enviando mensaje Kafka: " + e.getMessage());
+			    }
+				
 				boolean exito = DBManager.revocarCredenciales(cpId);
 				if(exito) {
 					System.out.println("Credenciales revocadas. El CP ha sido desconectado.");
-					try {
-						String comandoRevocacion = "Revocar_Credenciales";
-						ProducerRecord<String, String> record = new ProducerRecord<>("comandos-cp", cpId, comandoRevocacion);
-						productor.send(record);
-						productor.flush();
-					}
-					catch (Exception e) {
-						System.err.println("Error enviando orden de revocación: " + e.getMessage());
-					}
 				} 
 				else {
 					System.out.println("Error: No se pudo revocar");
