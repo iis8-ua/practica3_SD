@@ -42,8 +42,8 @@ public class EV_Central {
     	java.util.logging.Logger.getLogger("org.apache.kafka").setLevel(java.util.logging.Level.SEVERE);
     	
         if (args.length < 1) {
-        	System.out.println("Uso: java p2.central.EV_Central <host:puerto>");
-            //System.out.println("Ejemplo: java p2.central.EV_Central localhost:9092");
+        	System.out.println("Uso: java p3.central.EV_Central <host:puerto>");
+            //System.out.println("Ejemplo: java p3.central.EV_Central localhost:9092");
             System.exit(1);
         }
         
@@ -53,7 +53,6 @@ public class EV_Central {
         System.out.println("Central iniciando...");
         System.out.println("Conectando a Kafka en: " + dirKafka);
         
-        API_Central apiCentral = null;
         
         try {
         	 //Configuracion productor con Kafka
@@ -87,9 +86,6 @@ public class EV_Central {
             scanner=new Scanner(System.in);
             Thread hilo=new Thread(() -> iniciarComandos());
             hilo.start();
-            
-            apiCentral = new API_Central(productor);
-            apiCentral.iniciar(5000);
             
             mantenerEjecucion();
         }
