@@ -246,6 +246,11 @@ public class EV_CP_M {
             conn.disconnect();
 
         } 
+        catch (java.net.ConnectException e) {
+            System.err.println("\n Error: Registry no responde.");
+            System.err.println("   -> Causa: No se puede conectar al puerto 4444.");
+            System.err.println("   -> Solución: Verifique que EV_Registry está ejecutándose.");
+        }
         catch (Exception e) {
             System.err.println("Error en registro HTTP: " + e.getMessage());
             e.printStackTrace();
@@ -342,7 +347,11 @@ public class EV_CP_M {
                 System.out.println("Error en la baja.");
             }
             
-        } catch (Exception e) {
+        }
+        catch (java.net.ConnectException e) {
+            System.err.println("\n Error: Registry no responde.");
+       }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -592,6 +601,9 @@ public class EV_CP_M {
             conn.disconnect();
             
 		}
+		catch (java.net.ConnectException e) {
+	        System.err.println("\nError: Registry no responde.");
+	    }
 		catch (Exception e) {
             System.err.println("Error en la consulta GET: " + e.getMessage());
             e.printStackTrace();
