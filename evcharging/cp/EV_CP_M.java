@@ -23,6 +23,7 @@ public class EV_CP_M {
     private boolean ejecucion;
     private boolean inicio;
     private boolean engine=false;
+    private boolean cpRegistrado = false;
 
     private Thread hilo;
     
@@ -235,6 +236,7 @@ public class EV_CP_M {
                 
                 token = extraerValorJson(responseBody, "token");
                 System.out.println("-> Registro OK en Registry. Token obtenido: " + token);
+                this.cpRegistrado = true;
                 //String clave = extraerValorJson(responseBody, "clave");
                 
                 
@@ -519,7 +521,13 @@ public class EV_CP_M {
                         break;
                         
                     case "2":
-                    	darDeBajaCP();
+                    	if(!this.cpRegistrado) {
+                    		System.out.println("Error: No puedes dar de baja un CP que no está registrado.");
+                    	}
+                    	else {
+                        	darDeBajaCP();
+                        	this.cpRegistrado = false;
+                    	}
                     	break;
                     	
                     case "3":
