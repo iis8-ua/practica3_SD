@@ -1,0 +1,63 @@
+#UUID
+bin/kafka-storage.sh format \
+  --config config/server.properties \
+  --cluster-id $(bin/kafka-storage.sh random-uuid)
+
+
+#Iniciar KAFKA
+cd ~/Kafka
+bin/kafka-server-start.sh config/server.properties
+
+#Configurar BD
+docker exec -it p3-mariadb-1 mysql -u root -p
+GRANT ALL PRIVILEGES ON *.* TO 'evuser'@'%' IDENTIFIED BY 'evpass';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'rootpassword';
+FLUSH PRIVILEGES;
+
+#JSON del FRONT
+https://IP:5000/api/estado
+
+
+#Iniciar Central
+java -cp ".:p3/libs/*:p3" p3.central.EV_Central localhost:9092
+
+#Inicar Engine
+# CP001
+java -cp ".:p3/libs/*" p3.evcharging.cp.EV_CP_E CP001 "Calle Fria 123, Alaska" 0.15 localhost:9090 localhost:9092 8080
+
+# CP002 (en otra terminal)
+java -cp ".:p3/libs/*" p3.evcharging.cp.EV_CP_E CP002 "Avenida Central 456" 0.18 localhost:9091 localhost:9092 8081
+
+# CP003 (en otra terminal)  
+java -cp ".:p3/libs/*" p3.evcharging.cp.EV_CP_E CP003 "Plaza Mayor 789" 0.16 localhost:9092 localhost:9092 8082
+
+#Iniciar Monitor
+java -cp ".:p3/libs/*" p3.evcharging.cp.EV_CP_M localhost 8080 CP001 localhost:9092 8080
+java -cp ".:p3/libs/*:p3" p3.evcharging.cp.EV_CP_M localhost 8080 CP002 localhost:9092 8081
+
+#Iniciar EV_W
+java -cp "../p3/libs/*:.." p3.ev_w.EV_W a2331b49f4c9d2656d837c291d852c12
+
+#Iniciar Registry
+java -cp ".:p3/libs/*" p3.registry.EV_Registry 
+
+#Iniciar Driver
+java -cp ".:p3/libs/*" p3.driver.EV_Driver localhost:9092 DRIVER001
+
+#Iniciar API Central
+java -cp ".:p3/libs/*" p3.central.API_Central localhost:9092
+
+Montar docker:
+cd p3/
+docker compose build
+docker compose up -d
+docker compose ps
+
+Borrar volumen:
+cd p3/
+docker-compose down
+docker volume rm p2_mariadb_data
+docker volume ls
+
+Entrar BD
+docker exec -it p3_mariadb_1 mysql -u evuser -pevpass ev_charging_system
