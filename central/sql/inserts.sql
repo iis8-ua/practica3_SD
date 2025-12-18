@@ -9,4 +9,10 @@ INSERT IGNORE INTO charging_point (id, ubicacion, estado, precio_kwh) VALUES
 INSERT IGNORE INTO driver (id, nombre) VALUES
 ('DRIVER001', 'Pedro Perez'),
 ('DRIVER002', 'Jaime Torregrosa'),
-('DRIVER003', 'Gonzalo Martinez');
+('DRIVER003', 'Gonzalo Martinez'),
+('DRIVER004', 'Ana Belen Rivas'),
+('DRIVER005', 'Carlos Javier Soler'),
+('DRIVER006', 'Lucia Mendez'),
+('DRIVER007', 'Marcos Rodriguez'),
+('DRIVER008', 'Elena Santonja'),
+('DRIVER009', 'David Alpañes');
